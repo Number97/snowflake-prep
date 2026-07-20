@@ -81,6 +81,8 @@ Every HTML quiz, mock, or dashboard is written as a real file under the structur
 
 **P6 — Work all axes.** Never let a good diagnostic/quiz score exempt a domain from being drilled. Sample sizes are small; confirm mastery on a fresh full drill.
 
+**P7 — Auto-commit + push after every update.** Whenever files change on disk in a session (a new/updated quiz, saved `results/*.md`, `progress.json`, or `overview.html`), run the **`commit-progress`** skill at the end of that turn. It stages everything, commits with a **computed** readiness-% message (`<pct>% ready — <what changed>`, where `<pct>` comes from `scripts/readiness.py`, never hand-typed), and pushes to `origin`. The readiness model is deterministic: mean domain mastery (untaken domains = diagnostic baseline), blended 50/50 with the latest mock once mocks begin — see `scripts/readiness.py --explain`. Never invent the number; if `progress.json` is missing, stop.
+
 ---
 
 ## 5. File & folder structure (Claude Code writes here)
@@ -247,6 +249,7 @@ Status values: `todo` | `next` | `in-progress` | `needs-redrill` | `cleared` (dr
 - **`DRILL <domain>`** — build a fresh drill for a specific domain out of order.
 - **`MOCK`** — build the next mock (only once all drills are cleared, unless I insist).
 - **`FIX`** — if I spotted a wrong fact, correct it in the artifact AND note the correction here in §7.
+- **`/commit-progress`** — run the auto-commit + push skill now (readiness-% commit message). Runs automatically after every update per P7; this is the manual trigger.
 
 ---
 
