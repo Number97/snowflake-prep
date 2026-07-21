@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnowPro Core — Warehouses & Performance Drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* DARK "Snowflake data console" theme */
+:root{
+  --bg:#0A1826; --card:#0F2233; --card2:#14293B; --ink:#E6F0F8; --muted:#8AA6BD;
+  --line:#26425B; --accent:#2E8FE6; --cyan:#29B5E8; --ok:#2FBE8D;
+  --amber:#E3A24C; --bad:#E26B54; --codebg:#06121C; --codetx:#CFE3F5; --glyph:#06121C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.55;padding:16px;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;box-shadow:0 4px 24px rgba(0,0,0,.38)}
+h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.7rem;line-height:1.15;letter-spacing:-.01em}
+h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.25rem;margin-bottom:6px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.14em;color:var(--cyan);margin-bottom:12px}
+.dombadge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);background:rgba(41,181,232,.12);border:1px solid rgba(41,181,232,.35);padding:4px 10px;border-radius:20px;margin-bottom:14px}
+p.lead{color:var(--muted);font-size:1rem;margin:14px 0 20px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.chip{flex:1;min-width:120px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center}
+.chip b{display:block;font-family:'IBM Plex Mono',monospace;font-size:1.35rem;color:var(--cyan);font-weight:500}
+.chip span{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+button{font-family:inherit;cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 26px;font-size:1rem;font-weight:600;width:100%;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{background:var(--card2);color:var(--muted);cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--cyan);border:1.5px solid var(--cyan)}
+.mp{display:flex;gap:3px;margin:0 0 18px;flex-wrap:wrap}
+.mp i{height:8px;flex:1;min-width:6px;background:var(--line);border-radius:2px;transition:background .3s}
+.mp i.done{background:var(--cyan)}
+.mp i.cur{background:var(--accent)}
+.counter{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);margin-bottom:10px}
+.qtext{font-size:1.12rem;font-weight:500;margin-bottom:16px;line-height:1.4}
+pre.sql{background:var(--codebg);color:var(--codetx);font-family:'IBM Plex Mono',monospace;font-size:.82rem;padding:14px 16px;border-radius:10px;overflow-x:auto;margin:0 0 16px;line-height:1.5;border:1px solid var(--line)}
+.hint{font-size:.8rem;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:12px}
+.opts{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.opt{display:flex;gap:12px;align-items:flex-start;background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;text-align:left;font-size:.96rem;color:var(--ink);width:100%;transition:.12s}
+.opt:hover:not(:disabled){border-color:var(--cyan);background:#16324A}
+.opt.sel{border-color:var(--accent);background:rgba(46,143,230,.20)}
+.opt .key{font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:500;background:var(--bg);border:1px solid var(--line);border-radius:6px;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink)}
+.opt.sel .key{background:var(--accent);color:#fff;border-color:var(--accent)}
+.opt.correct{border-color:var(--ok);background:rgba(47,190,141,.18)}
+.opt.correct .key{background:var(--ok);color:var(--glyph);border-color:var(--ok)}
+.opt.missed{border-color:var(--ok);border-style:dashed;background:rgba(47,190,141,.09)}
+.opt.wrong{border-color:var(--bad);background:rgba(226,107,84,.17)}
+.opt.wrong .key{background:var(--bad);color:var(--glyph);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.verdict{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:10px}
+.verdict.good{color:var(--ok)}
+.verdict.bad{color:var(--bad)}
+.explain{background:#10293D;border-left:4px solid var(--cyan);border-radius:0 12px 12px 0;padding:15px 16px;font-size:.93rem;color:var(--ink);margin-bottom:18px}
+.explain .lbl{font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);display:block;margin-bottom:4px}
+.explain .concept{margin-bottom:14px}
+.explain .why{margin-bottom:14px}
+.explain .why ul{margin:2px 0 0;padding-left:2px;list-style:none}
+.explain .why li{position:relative;padding-left:18px;margin-bottom:6px;line-height:1.4}
+.explain .why li::before{content:"✗";position:absolute;left:0;color:var(--bad);font-weight:700;font-size:.85em}
+.explain .trap{background:rgba(227,162,76,.12);border:1px solid rgba(227,162,76,.38);border-radius:8px;padding:10px 12px;margin-top:4px}
+.explain .trap .lbl{color:var(--amber)}
+.explain b{color:var(--cyan)}
+.explain code{font-family:'IBM Plex Mono',monospace;font-size:.85em;background:rgba(46,143,230,.20);color:#DCEBFB;padding:1px 5px;border-radius:4px}
+.svgwrap{background:#0C1E2E;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:18px 18px;border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0 0}
+.svgcap{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px}
+.bigpct{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:3.4rem;line-height:1;color:var(--cyan)}
+.passline{color:var(--muted);font-size:.9rem;margin:6px 0 20px}
+.bars{display:flex;flex-direction:column;gap:12px;margin:18px 0}
+.bar-row{display:flex;flex-direction:column;gap:5px}
+.bar-lab{display:flex;justify-content:space-between;font-size:.82rem;font-family:'IBM Plex Mono',monospace}
+.bar-track{height:10px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar-fill{height:100%;border-radius:6px}
+.focus{background:rgba(227,162,76,.10);border:1px solid rgba(227,162,76,.38);border-radius:12px;padding:14px 16px;margin:18px 0;font-size:.92rem}
+.focus b{color:var(--amber)}
+textarea{width:100%;height:230px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:var(--codebg);color:var(--codetx);border:1px solid var(--line);border-radius:10px;padding:12px;resize:vertical;line-height:1.5}
+.copybtn{margin:10px 0 4px;background:var(--ok);color:var(--glyph)}
+.hidden{display:none}
+.foot{text-align:center;color:var(--muted);font-size:.75rem;margin-top:18px;font-family:'IBM Plex Mono',monospace}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="start" class="card">
+  <div class="eyebrow">SnowPro Core · COF-C02 · Drill 3 of 8</div>
+  <h1>Warehouses &amp; Performance</h1>
+  <p class="lead">Sizing &amp; the credit table, per-second billing, scale-up vs scale-out, multi-cluster policies, serverless features, and the three caches. Numbers-heavy and trap-heavy. Clear it at <b>≥ 80%</b>.</p>
+  <div class="chips">
+    <div class="chip"><b>20</b><span>Questions</span></div>
+    <div class="chip"><b>Warehouses</b><span>Domain</span></div>
+    <div class="chip"><b>∞</b><span>No timer</span></div>
+  </div>
+  <button class="btn" onclick="start()">Start drill →</button>
+</section>
+
+<section id="quiz" class="card hidden">
+  <div class="mp" id="mp"></div>
+  <div class="counter" id="counter"></div>
+  <div class="dombadge">Warehouses &amp; Performance</div>
+  <div class="qtext" id="qtext"></div>
+  <div id="extra"></div>
+  <div class="hint" id="hint"></div>
+  <div class="opts" id="opts"></div>
+  <div id="fb"></div>
+  <button class="btn" id="action" disabled onclick="onAction()">Validate</button>
+</section>
+
+<section id="results" class="card hidden">
+  <div class="eyebrow">Drill complete</div>
+  <h2>Your Warehouses &amp; Performance score</h2>
+  <div class="bigpct" id="finalpct"></div>
+  <div class="passline" id="passmsg"></div>
+  <div class="bars" id="subbars"></div>
+  <div class="focus" id="focusbox"></div>
+  <h2 style="margin-top:8px">Copy-paste summary</h2>
+  <p class="lead" style="margin:6px 0 8px;font-size:.88rem">Paste this back to Claude as <code style="font-family:'IBM Plex Mono',monospace">RESULTS: …</code> to update your progress.</p>
+  <button class="btn copybtn" onclick="copySummary()">📋 Copy summary</button>
+  <textarea id="summary" readonly></textarea>
+  <button class="btn ghost" style="margin-top:14px" onclick="location.reload()">↻ Retake (reshuffles)</button>
+  <div class="foot">snowpro-prep · 07-warehouses-perf-drill</div>
+</section>
+
+</div>
+<script>
+/* WAREHOUSES & PERFORMANCE DRILL — build-quiz engine. Fresh IDs wh01–wh20. */
+const Q=[
+{id:"wh01",sub:"Sizing & credits",
+ q:"How many credits per hour does a MEDIUM warehouse consume?",
+ opts:["4","2","8","16"],
+ a:[0],
+ concept:"Credit consumption <b>doubles with each size</b>: XS = 1, S = 2, <b>M = 4</b>, L = 8, XL = 16, 2XL = 32, 3XL = 64, 4XL = 128, and so on. A Medium burns 4 credits/hour while running.",
+ why:["<b>2</b> is a Small.","<b>8</b> is a Large.","<b>16</b> is an X-Large."],
+ trap:"Memorize the doubling ladder: XS1, S2, M4, L8, XL16, 2XL32… Each step up = 2× the credits/hour."},
+
+{id:"wh02",sub:"Sizing & credits",
+ q:"Resizing a warehouse from Large to 3X-Large changes the credits/hour by what factor?",
+ opts:["8× (from 8 to 64)","2× (from 8 to 16)","4× (from 8 to 32)","16× (from 8 to 128)"],
+ a:[0],
+ concept:"Each size doubles: L = 8 → XL = 16 → 2XL = 32 → <b>3XL = 64</b>. That's three doublings from Large, i.e. <b>8×</b> the credits/hour (8 → 64).",
+ why:["2× would be L → XL only.","4× would be L → 2XL.","16× would be L → 4XL (128), one step too far."],
+ trap:"Every size = 2× the previous. Count the steps: L→XL→2XL→3XL is three doublings = 8×."},
+
+{id:"wh03",sub:"Sizing & credits",
+ q:"How is warehouse compute billed?",
+ opts:["Per second, with a 60-second minimum each time it starts or resumes","Per hour, rounded up to the next full hour","Per query executed","A flat monthly fee per warehouse"],
+ a:[0],
+ concept:"Warehouses bill <b>per second while running</b>, but with a <b>60-second minimum</b> charged each time the warehouse starts or resumes. After the first 60 seconds it's pure per-second.",
+ why:["It's not hourly rounding — that would massively overcharge short queries.","It's not per-query — idle-but-running time still costs credits.","There's no flat monthly warehouse fee; you pay for running time."],
+ trap:"Per-second billing, 60-second minimum on each start/resume. Suspending and resuming repeatedly re-triggers the 60s floor."},
+
+{id:"wh04",sub:"Sizing & credits",
+ q:"You resume a Small warehouse, it runs a 20-second query, then auto-suspends. How much are you billed for that run?",
+ opts:["60 seconds (the minimum), i.e. 2 credits × (60/3600)","20 seconds","1 full hour","Nothing — queries under 60 seconds are free"],
+ a:[0],
+ concept:"Even though the query took 20 seconds, the <b>60-second minimum</b> applies on resume, so you're billed for 60 seconds at the Small rate (2 credits/hour). Short bursts always cost at least a minute.",
+ why:["20 seconds ignores the 60-second floor.","It's not billed a full hour — after the 60s minimum it's per-second.","Sub-60-second queries are <b>not</b> free — they hit the minimum."],
+ trap:"Anything under a minute still bills the 60-second minimum. Frequent resume/suspend cycles can waste credits on the floor."},
+
+{id:"wh05",sub:"Sizing & credits",
+ q:"Which statement about Snowflake credits is TRUE?",
+ opts:["A credit is an abstract compute unit; its dollar value varies by edition, cloud, region, and contract","One credit always equals exactly one US dollar","Credits measure storage consumed, not compute","Credits are only charged for failed queries"],
+ a:[0],
+ concept:"A <b>credit is a unit of compute</b>, not a fixed price. What a credit costs in dollars depends on your <b>edition, cloud provider, region, and contract</b>. Storage is billed separately (per TB/month).",
+ why:["'1 credit = 1 USD' is a classic false statement — the price varies.","Credits measure <b>compute</b>, not storage.","Credits are charged for compute used, regardless of query success."],
+ trap:"Credit ≠ fixed dollars. Value varies by edition/cloud/region/contract. Storage is billed separately."},
+
+{id:"wh06",sub:"Scale up vs out",
+ q:"You have ONE very large, complex query that runs slowly and spills to disk. What's the right move?",
+ opts:["Scale UP — use a larger warehouse size for more memory and CPU per query","Scale OUT — add more clusters via multi-cluster","Add a resource monitor","Enable the result cache"],
+ a:[0],
+ concept:"A single heavy query needs more <b>power per query</b> — that's <b>scaling UP</b> (a bigger size: more memory, more compute, less spilling). Multi-cluster (scaling OUT) adds concurrency, which does nothing for one big query.",
+ svg:`<svg viewBox="0 0 340 120" width="100%" role="img" aria-label="Scale up vs scale out">
+ <text x="86" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#29B5E8">SCALE UP</text>
+ <rect x="60" y="30" width="24" height="20" rx="3" fill="#12314A" stroke="#2E8FE6"/>
+ <rect x="52" y="56" width="40" height="34" rx="3" fill="#123A2E" stroke="#2FBE8D"/>
+ <text x="86" y="108" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#8AA6BD">bigger size = more power/query</text>
+ <line x1="170" y1="18" x2="170" y2="102" stroke="#26425B"/>
+ <text x="254" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#29B5E8">SCALE OUT</text>
+ <rect x="208" y="40" width="22" height="22" rx="3" fill="#12314A" stroke="#2E8FE6"/>
+ <rect x="238" y="40" width="22" height="22" rx="3" fill="#12314A" stroke="#2E8FE6"/>
+ <rect x="268" y="40" width="22" height="22" rx="3" fill="#12314A" stroke="#2E8FE6"/>
+ <text x="254" y="86" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#8AA6BD">more clusters = more concurrency</text>
+ </svg>`,cap:"Scale UP = power per query · Scale OUT = concurrent queries",
+ why:["<b>Scaling out</b> adds clusters for concurrency, not memory for one query.","A <b>resource monitor</b> caps credits — it doesn't speed queries.","The <b>result cache</b> only helps repeat identical queries, not a fresh heavy one."],
+ trap:"One slow/spilling query → scale UP (bigger size). Many concurrent users → scale OUT (more clusters)."},
+
+{id:"wh07",sub:"Scale up vs out",
+ q:"At 9am, 200 analysts hit one warehouse and queries start QUEUING. Individual queries are fast. Best fix?",
+ opts:["Scale OUT — enable multi-cluster so more clusters handle concurrency","Scale UP — move to a bigger single warehouse size","Turn on auto-suspend","Switch to a serverless task"],
+ a:[0],
+ concept:"Queuing under many concurrent users is a <b>concurrency</b> problem, solved by <b>scaling OUT</b> — a multi-cluster warehouse spins up extra clusters to run more queries in parallel. Bigger size wouldn't reduce queuing much since each query is already fast.",
+ why:["<b>Scaling up</b> makes each query faster but doesn't add parallel capacity for many users.","<b>Auto-suspend</b> saves idle credits; it doesn't relieve queuing.","A <b>serverless task</b> is for scheduled jobs, not interactive concurrency."],
+ trap:"Queuing + many users = scale OUT (multi-cluster). Slow single query = scale UP."},
+
+{id:"wh08",sub:"Multi-cluster",
+ q:"Which is required to use a MULTI-CLUSTER warehouse, and what is the maximum number of clusters?",
+ opts:["Enterprise Edition (or higher); up to 10 clusters","Standard Edition; up to 3 clusters","Business Critical only; up to 20 clusters","Any edition; unlimited clusters"],
+ a:[0],
+ concept:"Multi-cluster warehouses require <b>Enterprise Edition or higher</b> and support up to <b>10 clusters</b> per warehouse (min 1, max 10).",
+ why:["<b>Standard Edition</b> does not include multi-cluster warehouses.","It's not Business-Critical-only — Enterprise already has it.","It's neither any-edition nor unlimited — Enterprise+, capped at 10."],
+ trap:"Multi-cluster = Enterprise+ feature, max 10 clusters. Standard Edition can't scale out."},
+
+{id:"wh09",sub:"Multi-cluster",
+ q:"Under the STANDARD scaling policy, when does a multi-cluster warehouse start another cluster?",
+ opts:["As soon as queries queue (or the system predicts queuing) — favors performance","Only after ~6 minutes of estimated queued work — favors saving credits","Never; STANDARD means a single fixed cluster","Only when a query spills to disk"],
+ a:[0],
+ concept:"The <b>STANDARD</b> policy is performance-first: it adds a cluster <b>immediately when queries queue</b> (or it predicts load), minimizing wait time. The trade-off is it may spin clusters up more eagerly.",
+ why:["Waiting ~6 minutes describes the <b>ECONOMY</b> policy, not STANDARD.","STANDARD isn't a single fixed cluster — that's a single-cluster warehouse.","Spilling triggers scaling UP considerations, not cluster count."],
+ trap:"STANDARD = add clusters ASAP (performance). ECONOMY = wait for ~6 min of work (savings)."},
+
+{id:"wh10",sub:"Multi-cluster",
+ q:"Under the ECONOMY scaling policy, how does the warehouse decide to start an additional cluster?",
+ opts:["Only if there is at least ~6 minutes of estimated queued work — it favors keeping clusters busy","Immediately whenever any query queues","It starts all clusters at once, always","It never starts more than one cluster"],
+ a:[0],
+ concept:"<b>ECONOMY</b> is credit-first: it holds off on new clusters unless there's roughly <b>6 minutes of work</b> to justify one, keeping existing clusters fully loaded. Queries may wait longer, but you spend fewer credits.",
+ why:["Immediate scaling on any queue is the <b>STANDARD</b> policy.","Starting all clusters at once is the <b>Maximized</b> mode (min = max), not ECONOMY.","ECONOMY still scales up to max — it's just more conservative about when."],
+ trap:"ECONOMY conserves credits — waits for ~6 min of queued work before adding a cluster. STANDARD adds them right away."},
+
+{id:"wh11",sub:"Multi-cluster",
+ q:"A multi-cluster warehouse is set with MIN_CLUSTER_COUNT = 3 and MAX_CLUSTER_COUNT = 3. What mode is this, and what does it mean?",
+ opts:["Maximized mode — all 3 clusters run whenever the warehouse is on (max concurrency, higher cost)","Auto-scale mode — clusters start and stop between 1 and 3","It's invalid — min and max can't be equal","Economy mode — it runs 1 cluster until 6 minutes of work"],
+ a:[0],
+ concept:"When <b>min = max</b> (and > 1), the warehouse runs in <b>Maximized mode</b>: it always runs that fixed number of clusters while active — maximum, steady concurrency with no ramp-up delay, but you pay for all clusters the whole time. <b>Auto-scale</b> is when min &lt; max, and the scaling policy governs ramping.",
+ why:["Auto-scale requires <b>min &lt; max</b>; here they're equal.","Equal min/max is <b>valid</b> — it's exactly how you configure Maximized.","Economy is a scaling <i>policy</i> for auto-scale, not a min=max configuration."],
+ trap:"min = max clusters → Maximized (always all on). min < max → Auto-scale (policy decides). Maximized is a mode, not a policy."},
+
+{id:"wh12",sub:"Multi-cluster",
+ q:"A MEDIUM multi-cluster warehouse runs with 3 clusters active for one hour. How many credits does it consume?",
+ opts:["12 (4 credits × 3 clusters)","4","36","3"],
+ a:[0],
+ concept:"Each cluster is a full warehouse of that size. A Medium is 4 credits/hour <b>per cluster</b>, so 3 active clusters for an hour = <b>4 × 3 = 12 credits</b>. Multi-cluster multiplies cost by the number of running clusters.",
+ why:["<b>4</b> would be a single cluster only.","<b>36</b> triple-counts (that'd be 4×3×3).","<b>3</b> ignores the size rate entirely."],
+ trap:"Multi-cluster credits = size rate × number of RUNNING clusters. Only running clusters bill."},
+
+{id:"wh13",sub:"Caching",
+ q:"Which cache serves an identical query's results without using ANY warehouse compute, for up to 24 hours?",
+ opts:["The result cache (in the cloud services layer)","The warehouse-local data cache","The metadata cache","The micro-partition cache"],
+ a:[0],
+ concept:"The <b>result cache</b> lives in the <b>cloud services layer</b> and returns the stored result of a previously run, <b>identical</b> query — no warehouse needed, so it's essentially free. Results are reusable for <b>24 hours</b> (the window extends up to 31 days if the query keeps being reused).",
+ why:["The <b>warehouse-local data cache</b> speeds re-reads of table data but still needs a running warehouse.","The <b>metadata cache</b> answers things like row counts / MIN-MAX, not full result sets.","There's no separately named 'micro-partition cache' serving results."],
+ trap:"Result cache = cloud services, 24h, exact-match, zero compute. Requires no warehouse to serve."},
+
+{id:"wh14",sub:"Caching",
+ q:"Which conditions must hold for the result cache to be reused? (Select TWO)",
+ opts:["The new query is syntactically identical to the earlier one","The underlying data has not changed since the result was cached","The same warehouse that ran it originally must be running","The result must be smaller than 16 MB"],
+ a:[0,1],
+ concept:"Result reuse requires the query to be <b>syntactically identical</b> AND the <b>underlying data unchanged</b> (plus the role must have the needed privileges, and the query can't use non-deterministic functions like <code>CURRENT_TIMESTAMP</code>).",
+ why:["The original warehouse does <b>not</b> need to be running — the result cache is in cloud services, warehouse-independent.","There is no 16 MB limit on cached results (that's the VARIANT value limit — unrelated)."],
+ trap:"Result cache reuse: identical query + unchanged data + privileges + deterministic. Warehouse state is irrelevant."},
+
+{id:"wh15",sub:"Caching",
+ q:"What happens to the warehouse-local (data) cache when the warehouse is SUSPENDED?",
+ opts:["It is dropped — the cache is lost and must be rebuilt on resume","It is preserved indefinitely","It is copied to the result cache","It moves to the metadata cache"],
+ a:[0],
+ concept:"The <b>warehouse-local data cache</b> lives on the compute cluster's local SSD. When the warehouse <b>suspends, that cache is cleared</b>; on resume the warehouse starts 'cold' and repopulates it as queries run. This is a reason not to over-aggressively auto-suspend a busy warehouse.",
+ why:["It is <b>not</b> preserved across suspend — it's ephemeral to the running cluster.","It isn't copied to the result cache (a different, cloud-services cache).","It doesn't migrate to the metadata cache."],
+ trap:"Suspend a warehouse → local data cache is GONE. Result cache & metadata cache (cloud services) survive."},
+
+{id:"wh16",sub:"Serverless",
+ q:"Which features are SERVERLESS (run on Snowflake-managed compute, no user warehouse needed)? (Select THREE)",
+ opts:["Snowpipe","Automatic Clustering","Materialized View refresh","A manual COPY INTO statement"],
+ a:[0,1,2],
+ concept:"Serverless features use Snowflake-managed compute you don't size or resume: <b>Snowpipe, Automatic Clustering, Materialized View refresh</b> (also Search Optimization maintenance, serverless tasks, dynamic-table refresh, and replication).",
+ why:["A <b>manual COPY INTO</b> is the exception — it runs on a <b>user-managed warehouse</b> that must be running, so it isn't serverless."],
+ trap:"Serverless: Snowpipe, auto-clustering, MV/dynamic-table refresh, SOS, serverless tasks, replication. Manual COPY needs a warehouse."},
+
+{id:"wh17",sub:"Auto-suspend/resume",
+ q:"What do AUTO_SUSPEND and AUTO_RESUME do for a virtual warehouse?",
+ opts:["Auto-suspend stops the warehouse after an idle period; auto-resume restarts it when a query arrives","They automatically resize the warehouse based on load","They enable multi-cluster scaling","They cache query results for 24 hours"],
+ a:[0],
+ concept:"<b>AUTO_SUSPEND</b> suspends the warehouse after a set number of idle seconds (so you stop paying while idle); <b>AUTO_RESUME</b> automatically restarts it when a new query is submitted. Together they minimize wasted credits without manual babysitting.",
+ why:["Resizing by load isn't automatic — you change size manually (or use multi-cluster for concurrency).","Multi-cluster scaling is a separate configuration (min/max clusters).","Result caching is a separate cloud-services feature."],
+ trap:"AUTO_SUSPEND = stop when idle (save credits); AUTO_RESUME = start on demand. Not resizing, not multi-cluster."},
+
+{id:"wh18",sub:"Scale up vs out",
+ q:"Which statement about scaling UP (resizing to a larger warehouse) is TRUE?",
+ opts:["It gives each query more memory/compute, helping large complex queries and reducing spilling","It increases the number of concurrent queries the warehouse can run","It requires Enterprise Edition","It is done automatically based on query load"],
+ a:[0],
+ concept:"<b>Scaling up</b> (bigger size) provides <b>more memory and CPU per query</b> — ideal for heavy, complex queries and to reduce disk spilling. It does not, by itself, add concurrency; that's scaling out.",
+ why:["Adding concurrent capacity is <b>scaling OUT</b> (multi-cluster), not up.","Resizing works on <b>any edition</b> — multi-cluster is the Enterprise+ feature.","Resizing is a <b>manual</b> action; it isn't load-driven automation."],
+ trap:"Scale UP = more power/memory per query (any edition, manual). Scale OUT = concurrency (Enterprise+, multi-cluster)."},
+
+{id:"wh19",sub:"Caching",
+ q:"After you suspend and then resume a warehouse, which cache is EMPTY and must be rebuilt?",
+ opts:["The warehouse-local data cache","The result cache","The metadata cache","All three are cleared on suspend"],
+ a:[0],
+ concept:"Only the <b>warehouse-local data cache</b> (on the cluster's SSD) is lost on suspend. The <b>result cache</b> and <b>metadata cache</b> live in the cloud services layer and are independent of any warehouse, so they persist across suspend/resume.",
+ why:["The <b>result cache</b> is in cloud services — it survives suspend.","The <b>metadata cache</b> is also in cloud services — it survives.","Not all three are cleared — only the warehouse-local one."],
+ trap:"Suspend clears ONLY the local data cache. Cloud-services caches (result, metadata) persist."},
+
+{id:"wh20",sub:"Sizing & credits",
+ q:"Which action does NOT, by itself, change how many credits a warehouse consumes per hour?",
+ opts:["Enabling AUTO_RESUME on the warehouse","Resizing from Small to Large","Adding a second active cluster to a multi-cluster warehouse","Running it at 4X-Large instead of X-Large"],
+ a:[0],
+ concept:"Credit burn rate depends on <b>size</b> and the <b>number of running clusters</b>. <b>AUTO_RESUME</b> just controls <i>when</i> the warehouse starts — it doesn't change the per-hour rate once running (it can affect total spend indirectly, but not the hourly rate).",
+ why:["<b>Resizing S→L</b> changes the rate (2 → 8 credits/hr).","<b>A second active cluster</b> doubles the running cost.","<b>4XL vs XL</b> is 128 vs 16 credits/hr — very different."],
+ trap:"Per-hour credit rate = size × running clusters. AUTO_RESUME/AUTO_SUSPEND affect WHEN it runs, not the rate."},
+];
+
+/* ---------- ENGINE ---------- */
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const word=n=>({2:'TWO',3:'THREE',4:'FOUR'}[n]||n);
+let cur=0, picks=[], validated=false;
+const answers=[];
+const el=id=>document.getElementById(id);
+
+function start(){el('start').classList.add('hidden');el('quiz').classList.remove('hidden');render();}
+
+function buildMP(){
+  const mp=el('mp');mp.innerHTML='';
+  Q.forEach((_,i)=>{const b=document.createElement('i');
+    if(i<cur)b.className='done';else if(i===cur)b.className='cur';mp.appendChild(b);});
+}
+
+function render(){
+  validated=false;picks=[];
+  const q=Q[cur];
+  const disp=q.opts.map((t,i)=>({t,correct:q.a.includes(i)}));
+  shuffle(disp);
+  q._disp=disp; q._need=q.a.length;
+  buildMP();
+  el('counter').textContent=`Question ${cur+1} of ${Q.length}`;
+  el('qtext').textContent=q.q;
+  el('extra').innerHTML=q.sql?`<pre class="sql">${q.sql}</pre>`:'';
+  el('hint').textContent=q._need>1?`Select ${word(q._need)}.`:'';
+  const o=el('opts');o.innerHTML='';
+  disp.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';b.dataset.i=i;
+    b.innerHTML=`<span class="key">${String.fromCharCode(65+i)}</span><span>${opt.t}</span>`;
+    b.onclick=()=>pick(i);
+    o.appendChild(b);
+  });
+  el('fb').innerHTML='';
+  const act=el('action');act.textContent='Validate';act.disabled=true;
+}
+
+function pick(i){
+  if(validated)return;
+  const need=Q[cur]._need;
+  if(need>1){
+    const at=picks.indexOf(i);
+    if(at>-1)picks.splice(at,1);else if(picks.length<need)picks.push(i);
+  }else picks=[i];
+  document.querySelectorAll('#opts .opt').forEach(b=>b.classList.toggle('sel',picks.includes(+b.dataset.i)));
+  el('action').disabled=picks.length!==need;
+}
+
+const arrEq=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
+
+function onAction(){validated?next():validate();}
+
+function validate(){
+  validated=true;
+  const q=Q[cur], disp=q._disp;
+  const correctIdx=disp.map((o,i)=>o.correct?i:-1).filter(i=>i>=0);
+  const correct=arrEq(picks,correctIdx);
+  answers.push({id:q.id,sub:q.sub,correct});
+  document.querySelectorAll('#opts .opt').forEach(b=>{
+    const i=+b.dataset.i;b.disabled=true;
+    const isAns=disp[i].correct,isPick=picks.includes(i);
+    if(isAns&&isPick)b.classList.add('correct');
+    else if(isAns&&!isPick)b.classList.add('missed');
+    else if(!isAns&&isPick)b.classList.add('wrong');
+  });
+  const whyList=q.why.map(w=>`<li>${w}</li>`).join('');
+  const diagram=q.svg?`<div class="svgwrap">${q.svg}<div class="svgcap">${q.cap||''}</div></div>`:'';
+  el('fb').innerHTML=`
+    <div class="verdict ${correct?'good':'bad'}">${correct?'✓ Correct':'✗ Not quite'}</div>
+    <div class="explain">
+      <div class="concept"><span class="lbl">What's really going on</span>${q.concept}</div>
+      <div class="why"><span class="lbl">Why the other options are wrong</span><ul>${whyList}</ul></div>
+      <div class="trap"><span class="lbl">Exam trap — remember this</span>${q.trap}</div>
+      ${diagram}
+    </div>`;
+  el('action').textContent=cur===Q.length-1?'See results →':'Next →';
+}
+
+function next(){
+  cur++;
+  if(cur>=Q.length)showResults();
+  else{render();window.scrollTo({top:0,behavior:'smooth'});}
+}
+
+function showResults(){
+  el('quiz').classList.add('hidden');el('results').classList.remove('hidden');
+  const total=Q.length, got=answers.filter(a=>a.correct).length, pct=Math.round(got/total*100);
+  el('finalpct').textContent=`${pct}%`;
+  el('finalpct').style.color=pct>=80?'var(--ok)':pct>=67?'var(--amber)':'var(--bad)';
+  el('passmsg').innerHTML=`${got} / ${total} correct · pass mark ≈75% · <b>clear rule 80%</b> — ${pct>=80?'✅ domain CLEARED':'🔁 needs a re-drill'}`;
+  const subs={};
+  answers.forEach(a=>{(subs[a.sub]=subs[a.sub]||{c:0,t:0});subs[a.sub].t++;if(a.correct)subs[a.sub].c++;});
+  const bars=el('subbars');bars.innerHTML='';
+  Object.entries(subs).sort((a,b)=>a[1].c/a[1].t-b[1].c/b[1].t).forEach(([s,v])=>{
+    const p=Math.round(v.c/v.t*100), col=p>=67?'var(--ok)':p>=34?'var(--amber)':'var(--bad)';
+    bars.innerHTML+=`<div class="bar-row"><div class="bar-lab"><span>${s}</span><span>${v.c}/${v.t} · ${p}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div></div>`;
+  });
+  const weak=Object.entries(subs).filter(([,v])=>v.c/v.t<0.67).map(([s])=>s);
+  el('focusbox').innerHTML=`<b>Focus next:</b> ${weak.length?weak.join(', ')+' — review these before another attempt.':'Strong across the board. If ≥80%, this domain is CLEARED — on to Data Protection.'}`;
+  buildSummary(pct,got,total,subs,weak);
+}
+
+function buildSummary(pct,got,total,subs,weak){
+  const lines=answers.map((a,i)=>`[Warehouses & Perf] Q${i+1} ${a.correct?'✓':'✗'} — ${a.sub}${a.correct?'':' — MISS: review '+a.sub}`).join('\n');
+  const tally=Object.entries(subs).map(([s,v])=>`${s} ${v.c}/${v.t}`).join(' · ');
+  el('summary').value=
+`SnowPro Core — RESULTS
+Session: 07-warehouses-perf-drill
+Domain: Warehouses & Performance (drill 3 of 8)
+Overall: ${pct}% (${got}/${total})  |  clear rule 80% -> ${pct>=80?'CLEARED':'NEEDS RE-DRILL'}
+
+Per-question:
+${lines}
+
+Sub-topic tally: ${tally}
+Focus next: ${weak.length?weak.join(', '):'none — domain solid'}`;
+}
+
+function copySummary(){
+  const t=el('summary');t.select();
+  try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand('copy');}
+  const b=event.target,o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1600);
+}
+</script>
+</body>
+</html>
