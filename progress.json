@@ -6,7 +6,7 @@
   "diagnostic": { "done": true, "scorePct": 40, "raw": "8/20" },
   "phase1_drills": [
     { "n": 1, "domain": "Data Loading",        "slug": "data-loading",   "status": "cleared", "diag": "1/4", "attempts": 3, "latestScore": 85, "seenQuestionIds": ["dl201-dl220","dl301-dl320","dl401-dl420"], "note": "CLEARED at 85% on v3 (attempt 3). Progression 70->75->85. Minor residual: one PUT/GET slip (small sample, domain cleared)." },
-    { "n": 2, "domain": "Monitoring",          "slug": "monitoring",     "status": "next",    "diag": "0/1", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
+    { "n": 2, "domain": "Monitoring",          "slug": "monitoring",     "status": "needs-redrill", "diag": "0/1", "attempts": 1, "latestScore": 70, "seenQuestionIds": ["mon01-mon20"], "note": "Attempt 1 = 70% (14/20). Weak: IS vs AU (3/6), Resource monitors (4/6), Query Profile (2/3). Re-drill v2 (mon101-mon120) built, weighted to IS-vs-AU." },
     { "n": 3, "domain": "Warehouses & Perf",   "slug": "warehouses-perf","status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 4, "domain": "Data Protection",     "slug": "data-protection","status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 5, "domain": "Architecture",        "slug": "architecture",   "status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
@@ -19,5 +19,5 @@
     { "n": 2, "type": "timed-115", "status": "locked", "latestScore": null },
     { "n": 3, "type": "timed-115", "status": "locked", "latestScore": null }
   ],
-  "nextSession": "Monitoring drill (drill 2 of 8)"
+  "nextSession": "Monitoring re-drill (v2) — focus IS vs AU, Resource monitors, Query Profile"
 }
