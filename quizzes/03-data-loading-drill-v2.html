@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnowPro Core — Data Loading Re-Drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ice:#E8F0F6; --card:#FFFFFF; --ink:#0C2233; --muted:#54708A;
+  --line:#C9D9E6; --accent:#1467C8; --cyan:#29B5E8; --ok:#0F8A63;
+  --amber:#D9822B; --bad:#C64530; --codebg:#0C2233; --codetx:#D9E8F5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--ice);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.55;padding:16px;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;box-shadow:0 2px 14px rgba(12,34,51,.05)}
+h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.7rem;line-height:1.15;letter-spacing:-.01em}
+h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.25rem;margin-bottom:6px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.14em;color:var(--cyan);margin-bottom:12px}
+.dombadge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);background:#E3EEFA;border:1px solid #BBD4F2;padding:4px 10px;border-radius:20px;margin-bottom:14px}
+p.lead{color:var(--muted);font-size:1rem;margin:14px 0 20px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.chip{flex:1;min-width:120px;background:var(--ice);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center}
+.chip b{display:block;font-family:'IBM Plex Mono',monospace;font-size:1.35rem;color:var(--accent);font-weight:500}
+.chip span{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+button{font-family:inherit;cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 26px;font-size:1rem;font-weight:600;width:100%;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.mp{display:flex;gap:3px;margin:0 0 18px;flex-wrap:wrap}
+.mp i{height:8px;flex:1;min-width:6px;background:var(--line);border-radius:2px;transition:background .3s}
+.mp i.done{background:var(--cyan)}
+.mp i.cur{background:var(--accent)}
+.counter{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);margin-bottom:10px}
+.qtext{font-size:1.12rem;font-weight:500;margin-bottom:16px;line-height:1.4}
+pre.sql{background:var(--codebg);color:var(--codetx);font-family:'IBM Plex Mono',monospace;font-size:.82rem;padding:14px 16px;border-radius:10px;overflow-x:auto;margin:0 0 16px;line-height:1.5}
+.hint{font-size:.8rem;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:12px}
+.opts{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.opt{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;text-align:left;font-size:.96rem;color:var(--ink);width:100%;transition:.12s}
+.opt:hover:not(:disabled){border-color:var(--cyan);background:#F5FAFD}
+.opt.sel{border-color:var(--accent);background:#EAF2FC}
+.opt .key{font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:500;background:var(--ice);border:1px solid var(--line);border-radius:6px;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.opt.sel .key{background:var(--accent);color:#fff;border-color:var(--accent)}
+.opt.correct{border-color:var(--ok);background:#E7F5EF}
+.opt.correct .key{background:var(--ok);color:#fff;border-color:var(--ok)}
+.opt.missed{border-color:var(--ok);border-style:dashed;background:#F1FAF5}
+.opt.wrong{border-color:var(--bad);background:#FBEDEA}
+.opt.wrong .key{background:var(--bad);color:#fff;border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.verdict{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:10px}
+.verdict.good{color:var(--ok)}
+.verdict.bad{color:var(--bad)}
+.explain{background:#F3F9FD;border-left:4px solid var(--cyan);border-radius:0 12px 12px 0;padding:15px 16px;font-size:.93rem;color:var(--ink);margin-bottom:18px}
+.explain .lbl{font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);display:block;margin-bottom:4px}
+.explain .concept{margin-bottom:14px}
+.explain .why{margin-bottom:14px}
+.explain .why ul{margin:2px 0 0;padding-left:2px;list-style:none}
+.explain .why li{position:relative;padding-left:18px;margin-bottom:6px;line-height:1.4}
+.explain .why li::before{content:"✗";position:absolute;left:0;color:var(--bad);font-weight:700;font-size:.85em}
+.explain .trap{background:#FFF6EC;border:1px solid #F0D3AC;border-radius:8px;padding:10px 12px;margin-top:4px}
+.explain .trap .lbl{color:var(--amber)}
+.explain b{color:var(--accent)}
+.explain code{font-family:'IBM Plex Mono',monospace;font-size:.85em;background:#E3EEFA;padding:1px 5px;border-radius:4px}
+.svgwrap{background:#F7FBFE;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:18px 18px;border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0 0}
+.svgcap{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px}
+.bigpct{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:3.4rem;line-height:1;color:var(--accent)}
+.passline{color:var(--muted);font-size:.9rem;margin:6px 0 20px}
+.bars{display:flex;flex-direction:column;gap:12px;margin:18px 0}
+.bar-row{display:flex;flex-direction:column;gap:5px}
+.bar-lab{display:flex;justify-content:space-between;font-size:.82rem;font-family:'IBM Plex Mono',monospace}
+.bar-track{height:10px;background:var(--ice);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar-fill{height:100%;border-radius:6px}
+.focus{background:#FFF6EC;border:1px solid #F0D3AC;border-radius:12px;padding:14px 16px;margin:18px 0;font-size:.92rem}
+.focus b{color:var(--amber)}
+textarea{width:100%;height:230px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:var(--codebg);color:var(--codetx);border:1px solid var(--line);border-radius:10px;padding:12px;resize:vertical;line-height:1.5}
+.copybtn{margin:10px 0 4px;background:var(--ok)}
+.hidden{display:none}
+.foot{text-align:center;color:var(--muted);font-size:.75rem;margin-top:18px;font-family:'IBM Plex Mono',monospace}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="start" class="card">
+  <div class="eyebrow">SnowPro Core · COF-C02 · Drill 1 of 8 · RE-DRILL</div>
+  <h1>Data Loading — Re-Drill</h1>
+  <p class="lead">First attempt landed at <b>70%</b> (clear rule is 80%). This is a fully fresh set — 20 new questions weighted toward what tripped you: <b>Stages, Unload, PUT/GET</b>. Answers shuffle every load; each question teaches the whole concept. Clear it at <b>≥ 80%</b>.</p>
+  <div class="chips">
+    <div class="chip"><b>20</b><span>Questions</span></div>
+    <div class="chip"><b>Loading</b><span>Domain</span></div>
+    <div class="chip"><b>∞</b><span>No timer</span></div>
+  </div>
+  <button class="btn" onclick="start()">Start re-drill →</button>
+</section>
+
+<section id="quiz" class="card hidden">
+  <div class="mp" id="mp"></div>
+  <div class="counter" id="counter"></div>
+  <div class="dombadge">Data Loading</div>
+  <div class="qtext" id="qtext"></div>
+  <div id="extra"></div>
+  <div class="hint" id="hint"></div>
+  <div class="opts" id="opts"></div>
+  <div id="fb"></div>
+  <button class="btn" id="action" disabled onclick="onAction()">Validate</button>
+</section>
+
+<section id="results" class="card hidden">
+  <div class="eyebrow">Re-drill complete</div>
+  <h2>Your Data Loading score</h2>
+  <div class="bigpct" id="finalpct"></div>
+  <div class="passline" id="passmsg"></div>
+  <div class="bars" id="subbars"></div>
+  <div class="focus" id="focusbox"></div>
+  <h2 style="margin-top:8px">Copy-paste summary</h2>
+  <p class="lead" style="margin:6px 0 8px;font-size:.88rem">Paste this back to Claude as <code style="font-family:'IBM Plex Mono',monospace">RESULTS: …</code> to update your progress.</p>
+  <button class="btn copybtn" onclick="copySummary()">📋 Copy summary</button>
+  <textarea id="summary" readonly></textarea>
+  <button class="btn ghost" style="margin-top:14px" onclick="location.reload()">↻ Retake (reshuffles)</button>
+  <div class="foot">snowpro-prep · 03-data-loading-drill-v2</div>
+</section>
+
+</div>
+<script>
+/* DATA LOADING RE-DRILL — build-quiz engine (shuffle R1, feedback-only diagram R2, deep teaching R3).
+   Fresh IDs dl301–dl320; none reused from the first drill. */
+const Q=[
+{id:"dl301",sub:"Stages",
+ q:"Which statement best describes what a Snowflake STAGE actually is?",
+ opts:["A named location that references files, used to load data in or unload data out","A special kind of table that stores raw file contents as rows","A small compute cluster dedicated to loading files","An in-memory cache of recently queried results"],
+ a:[0],
+ concept:"A <b>stage is a pointer to file storage</b> — a named place where data files sit so Snowflake can <code>COPY INTO</code> a table from them (load) or <code>COPY INTO @stage</code> write files to them (unload). It holds files, not table rows, and does no compute itself. Internal stages use Snowflake-managed storage; external stages point at your own S3/GCS/Azure bucket.",
+ why:["It is <b>not a table</b> — files in a stage aren't queryable rows until you COPY them into a table (you can preview with <code>SELECT … FROM @stage</code>, but the stage isn't a table).","It is <b>not compute</b> — loading uses a warehouse or Snowpipe; the stage is just the file location.","The exact-match <b>result cache</b> is a separate cloud-services feature, unrelated to stages."],
+ trap:"Stage = a named file location (a loading dock). Not a table, not compute, not a cache."},
+
+{id:"dl302",sub:"Stages",
+ q:"Which are the THREE types of INTERNAL stage in Snowflake? (Select THREE)",
+ opts:["User stage","Table stage","Named stage","External stage"],
+ a:[0,1,2],
+ concept:"Internal stages live in Snowflake-managed storage and come in three flavors: <b>user</b> (<code>@~</code>, one private stage per user), <b>table</b> (<code>@%tbl</code>, auto-created per table), and <b>named</b> (<code>@stage</code>, created with <code>CREATE STAGE</code>, grantable/shareable). PUT/GET work on all three.",
+ why:["<b>External stage</b> is a real stage type but it is <i>external</i> — it references your own cloud bucket, not Snowflake-managed storage, so it's not one of the internal three."],
+ trap:"Internal = user (@~), table (@%tbl), named (@stage). External is its own separate category."},
+
+{id:"dl303",sub:"Stages",
+ q:"You need a stage that several roles can share, that loads into many different tables, and that stores a reusable file format. Which stage fits?",
+ opts:["A named stage","A user stage","A table stage","An external table"],
+ a:[0],
+ concept:"A <b>named stage</b> is the only internal stage you create explicitly, so you can <b>grant privileges on it</b> (shareable across roles), point it at any table, and attach a default <code>FILE_FORMAT</code> and copy options in its definition. User and table stages are implicit, single-purpose, and can't carry those settings.",
+ why:["A <b>user stage</b> (<code>@~</code>) is private to one user and can't be granted to others.","A <b>table stage</b> (<code>@%tbl</code>) is tied to exactly one table and can't hold a custom file format definition.","An <b>external table</b> is a read-only table over files, not a stage at all."],
+ trap:"Need sharing + reusable file format + many tables → named stage. User/table stages are implicit and limited."},
+
+{id:"dl304",sub:"Stages",
+ q:"An external stage points to an Amazon S3 bucket. Where does the data physically live, and what does Snowflake store?",
+ opts:["The files stay in your S3 bucket; Snowflake stores only stage metadata (the pointer + auth)","Snowflake copies the files into its internal storage when the stage is created","The files are moved into micro-partitions immediately","Snowflake stores nothing until a warehouse is resumed"],
+ a:[0],
+ concept:"An <b>external stage</b> is just metadata: a URL to your bucket plus how to authenticate (ideally a <b>storage integration</b>). The <b>files remain in your cloud account</b> until a <code>COPY INTO</code> loads them into a table (only then do they become Snowflake-managed micro-partitions).",
+ why:["Creating the stage <b>copies nothing</b> — it only records the pointer.","Files become <b>micro-partitions only after COPY INTO</b> loads them, not at stage creation.","Stage metadata exists <b>immediately</b>, independent of any warehouse."],
+ trap:"External stage = pointer + auth only. Data stays in your bucket until COPY INTO actually loads it."},
+
+{id:"dl305",sub:"Unload",
+ q:"You want to unload only two columns of a table into files on a stage. Which approach works?",
+ opts:["COPY INTO @stage FROM (SELECT col1, col2 FROM my_table)","UNLOAD (SELECT col1, col2 FROM my_table) TO @stage","EXPORT my_table (col1, col2) TO @stage","COPY INTO @stage SELECT col1, col2 FROM my_table"],
+ a:[0],
+ concept:"Unload uses <code>COPY INTO @stage FROM &lt;source&gt;</code>, and the source can be a <b>SELECT query wrapped in parentheses</b>, so you can project specific columns, filter, or transform on the way out. Full form: <code>COPY INTO @stage FROM (SELECT col1, col2 FROM my_table)</code>.",
+ why:["There is <b>no UNLOAD</b> command in Snowflake (that's Redshift).","<b>EXPORT</b> is not a Snowflake command.","<code>COPY INTO @stage SELECT …</code> without wrapping the query in parentheses is invalid syntax — a query source must be <code>FROM ( … )</code>."],
+ trap:"Column-selective unload = COPY INTO @stage FROM (SELECT …). The query MUST be parenthesized after FROM."},
+
+{id:"dl306",sub:"Unload",
+ q:"By default, unloading a large result set writes multiple files. Which option forces Snowflake to produce exactly ONE output file?",
+ opts:["SINGLE = TRUE","ONE_FILE = TRUE","MAX_FILE_SIZE = 0","COMPRESSION = NONE"],
+ a:[0],
+ concept:"Unload parallelizes by default and emits <b>multiple files</b> (e.g. <code>data_0_0_0.csv.gz</code>). <code>SINGLE = TRUE</code> collapses output to <b>one file</b>. Note it interacts with <code>MAX_FILE_SIZE</code> (default 16 MB, max 5 GB) — a single file still can't exceed the size cap, so raise <code>MAX_FILE_SIZE</code> for big single outputs.",
+ why:["<b>ONE_FILE</b> is not a real option.","<b>MAX_FILE_SIZE = 0</b> is invalid and wouldn't mean 'one file'.","<b>COMPRESSION = NONE</b> only turns off gzip; it has nothing to do with file count."],
+ trap:"SINGLE = TRUE → one file (still bounded by MAX_FILE_SIZE). Default unload = many parallel files."},
+
+{id:"dl307",sub:"Unload",
+ q:"By default, what compression is applied to files produced by COPY INTO @stage (unload)?",
+ opts:["gzip — files are written with a .gz extension unless you disable it","No compression — files are written as plain .csv","zstd — Snowflake's default for all unloads","The same codec the source table uses internally"],
+ a:[0],
+ concept:"Unload <b>compresses with gzip by default</b>, so CSV output looks like <code>data_0_0_0.csv.gz</code>. To change it, set <code>COMPRESSION</code> in the file format (e.g. <code>NONE</code>, <code>bzip2</code>, <code>zstd</code>, <code>snappy</code> for Parquet).",
+ why:["It is <b>not left uncompressed</b> by default — you must set <code>COMPRESSION = NONE</code> for that.","<b>zstd</b> is supported but not the unload default; gzip is.","Table micro-partition compression is internal and <b>unrelated</b> to the output file codec."],
+ trap:"Unload default codec = gzip (.gz files). Disable with COMPRESSION = NONE."},
+
+{id:"dl308",sub:"PUT/GET",
+ q:"What does the GET command do?",
+ opts:["Downloads files from an internal stage to a local directory","Uploads files from a local directory to an internal stage","Fetches rows from a table into a stage","Retrieves query results from the result cache"],
+ a:[0],
+ concept:"<b>GET downloads</b> files from an <b>internal</b> stage to your local filesystem — the reverse of PUT (which uploads). Like PUT, it needs local disk access, so it runs from SnowSQL or a driver, not a Snowsight worksheet.",
+ why:["<b>Uploading</b> local files to a stage is PUT, not GET.","GET moves <b>files</b>, not table rows — it doesn't read tables.","The <b>result cache</b> is unrelated; GET only touches internal-stage files."],
+ trap:"PUT = up (local → internal stage). GET = down (internal stage → local). Both internal-only, both need a local client."},
+
+{id:"dl309",sub:"PUT/GET",
+ q:"Select the TWO statements that are TRUE about PUT and GET. (Select TWO)",
+ opts:["They work only on internal stages","PUT compresses files with gzip by default","They can upload directly to an external S3 stage","They can be run from a Snowsight worksheet SQL cell"],
+ a:[0,1],
+ concept:"PUT/GET operate on <b>internal stages only</b>, and <b>PUT gzip-compresses by default</b> (<code>AUTO_COMPRESS = TRUE</code>) while encrypting client-side. Because they touch the local filesystem, they run from SnowSQL or the drivers.",
+ why:["They <b>cannot target external stages</b> — you fill those with the cloud's own tools (e.g. <code>aws s3 cp</code>).","They <b>cannot run in a worksheet SQL cell</b> — a browser can't reach your local disk."],
+ trap:"PUT/GET: internal-only, PUT auto-gzips, client-side encrypted, run from a local client — never external, never a worksheet cell."},
+
+{id:"dl310",sub:"PUT/GET",
+ q:"You are about to PUT a file that is already compressed (a .parquet file). What should you set so Snowflake doesn't compress it again?",
+ opts:["AUTO_COMPRESS = FALSE","OVERWRITE = FALSE","SOURCE_COMPRESSION = AUTO","PARALLEL = 1"],
+ a:[0],
+ concept:"PUT compresses with gzip by default. For files that are <b>already compressed</b> (Parquet with snappy, <code>.gz</code>, etc.), set <code>AUTO_COMPRESS = FALSE</code> so PUT uploads them as-is and doesn't wastefully double-compress.",
+ why:["<b>OVERWRITE</b> controls whether an existing staged file is replaced, not compression.","<b>SOURCE_COMPRESSION</b> is a COPY/file-format concept for reading, not a PUT control for this.","<b>PARALLEL</b> tunes upload threads, not compression."],
+ trap:"Already-compressed upload → AUTO_COMPRESS = FALSE. Default is TRUE (gzip)."},
+
+{id:"dl311",sub:"COPY options",
+ q:"You are loading JSON whose keys already match your table's column names. Which option maps them into columns automatically?",
+ opts:["MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE","AUTO_MAP = TRUE","INFER_SCHEMA = TRUE","FLATTEN = TRUE"],
+ a:[0],
+ concept:"<code>MATCH_BY_COLUMN_NAME</code> (<code>CASE_SENSITIVE</code> / <code>CASE_INSENSITIVE</code> / <code>NONE</code>) loads semi-structured fields straight into columns whose names match — no manual <code>SELECT $1:field</code> needed. It works with COPY into an existing table.",
+ why:["<b>AUTO_MAP</b> is not a real option.","<b>INFER_SCHEMA</b> detects columns to <i>generate the CREATE TABLE DDL</i>; it doesn't map data during a COPY into an existing table.","<b>FLATTEN</b> is a query-time table function that explodes arrays/objects into rows, not a COPY option."],
+ trap:"Match keys→columns during load = MATCH_BY_COLUMN_NAME. INFER_SCHEMA builds the DDL; FLATTEN explodes arrays at query time."},
+
+{id:"dl312",sub:"COPY options",
+ q:"During a real load, which option makes the COPY result set list ONLY the files that failed?",
+ opts:["RETURN_FAILED_ONLY = TRUE","VALIDATION_MODE = 'RETURN_ERRORS'","ON_ERROR = 'SKIP_FILE'","SHOW_FAILED = TRUE"],
+ a:[0],
+ concept:"<code>RETURN_FAILED_ONLY = TRUE</code> trims the COPY output so you only see files that failed — handy for big loads where you only care about problems. It's used during an <b>actual load</b> (data is still written).",
+ why:["<b>VALIDATION_MODE = 'RETURN_ERRORS'</b> is a dry run — it reports errors but loads nothing.","<b>ON_ERROR = 'SKIP_FILE'</b> changes load <i>behavior</i> (skips bad files); it doesn't filter the result output.","<b>SHOW_FAILED</b> is not a real option."],
+ trap:"RETURN_FAILED_ONLY = report failures during a real load. VALIDATION_MODE = dry run, loads nothing."},
+
+{id:"dl313",sub:"COPY options",
+ q:"Which COPY option caps the total number of BYTES loaded, stopping once the threshold is passed?",
+ opts:["SIZE_LIMIT","MAX_FILE_SIZE","TRUNCATECOLUMNS","LOAD_LIMIT"],
+ a:[0],
+ concept:"<code>SIZE_LIMIT</code> bounds the total bytes a single COPY loads: at least one file always loads, then Snowflake stops once the running total exceeds the limit. Useful for controlled/incremental loads.",
+ why:["<b>MAX_FILE_SIZE</b> is an <i>unload</i> option (size of each output file), not a load cap.","<b>TRUNCATECOLUMNS</b> truncates over-long strings; it's not about byte volume.","<b>LOAD_LIMIT</b> is not a real option."],
+ trap:"SIZE_LIMIT caps bytes loaded (≥1 file always loads first). MAX_FILE_SIZE is for unloading."},
+
+{id:"dl314",sub:"COPY options",
+ q:"A file has string values longer than the target VARCHAR columns. Which setting loads them by truncating to the column length instead of erroring?",
+ opts:["TRUNCATECOLUMNS = TRUE","ON_ERROR = 'CONTINUE'","ENFORCE_LENGTH = TRUE","STRIP_OUTER_ARRAY = TRUE"],
+ a:[0],
+ concept:"<code>TRUNCATECOLUMNS = TRUE</code> (equivalently <code>ENFORCE_LENGTH = FALSE</code>) silently truncates strings that exceed the column's length so the row still loads. By default (<code>TRUNCATECOLUMNS = FALSE</code> / <code>ENFORCE_LENGTH = TRUE</code>) an over-length value raises an error.",
+ why:["<b>ON_ERROR = 'CONTINUE'</b> would <i>skip</i> the offending rows entirely, not truncate and keep them.","<b>ENFORCE_LENGTH = TRUE</b> is the opposite — it enforces the limit and errors; you'd set it to FALSE.","<b>STRIP_OUTER_ARRAY</b> is a JSON option that removes the outer <code>[]</code>, unrelated to string length."],
+ trap:"Truncate long strings to fit = TRUNCATECOLUMNS = TRUE (a.k.a. ENFORCE_LENGTH = FALSE). Default errors instead."},
+
+{id:"dl315",sub:"Snowpipe",
+ q:"Which statement best describes the relationship between Snowpipe and COPY INTO?",
+ opts:["Snowpipe is a serverless service that runs COPY INTO logic automatically as files arrive","Snowpipe and COPY INTO are unrelated, separate loading engines","COPY INTO internally calls Snowpipe to do the work","Snowpipe replaces COPY INTO with a row-by-row streaming engine"],
+ a:[0],
+ concept:"A <b>pipe</b> object wraps a <code>COPY INTO</code> statement; Snowpipe is the <b>serverless service that executes that COPY automatically</b> on new files (triggered by cloud notifications or the REST API). Same load engine and options — the difference is automation and serverless compute.",
+ why:["They're <b>not unrelated</b> — Snowpipe is literally built on COPY INTO.","The direction is reversed: <b>Snowpipe calls COPY</b>, not the other way around.","Snowpipe is <b>micro-batch file loading</b>, not row-by-row (that's the separate Snowpipe Streaming API)."],
+ trap:"Snowpipe = automated, serverless COPY INTO. A pipe stores the COPY statement; the service runs it on arriving files."},
+
+{id:"dl316",sub:"Snowpipe",
+ q:"You must load files that sit in an INTERNAL named stage using Snowpipe. Which mechanism do you use?",
+ opts:["The Snowpipe REST API (insertFiles endpoint)","Auto-ingest via cloud event notifications","A resource monitor trigger","A stream on the stage"],
+ a:[0],
+ concept:"Auto-ingest depends on cloud bucket notifications, which internal stages don't emit — so for an <b>internal</b> named stage you call the <b>Snowpipe REST API</b> (<code>insertFiles</code>) to tell the pipe which files to load. Auto-ingest is reserved for <b>external</b> stages.",
+ why:["<b>Auto-ingest</b> works only with external stages (S3/SQS, Event Grid, Pub/Sub notifications).","A <b>resource monitor</b> caps credits — it can't trigger loads.","There is <b>no stream-on-a-stage</b> trigger for Snowpipe; streams track table/view changes."],
+ trap:"Internal stage + Snowpipe → REST API (insertFiles). External stage + Snowpipe → auto-ingest notifications."},
+
+{id:"dl317",sub:"Load history",
+ q:"How long does Snowpipe retain its load history (used to avoid reloading the same file)?",
+ opts:["14 days","64 days","365 days","7 days"],
+ a:[0],
+ concept:"<b>Snowpipe load history is 14 days.</b> Bulk <code>COPY INTO</code> keeps <b>64 days</b>. Both are per-object dedup windows and are separate from the <code>SNOWFLAKE.ACCOUNT_USAGE</code> audit views, which retain <b>365 days</b> (with latency).",
+ why:["<b>64 days</b> is the bulk COPY window, not Snowpipe.","<b>365 days</b> is ACCOUNT_USAGE audit retention.","<b>7 days</b> is Fail-safe (and a typical INFORMATION_SCHEMA window), not load history."],
+ trap:"Snowpipe 14, COPY 64, ACCOUNT_USAGE 365, Fail-safe 7. Keep the four numbers straight."},
+
+{id:"dl318",sub:"File formats",
+ q:"When you load JSON, Avro, or Parquet into a Snowflake table without pre-defining every field, what column type typically holds the data?",
+ opts:["VARIANT","OBJECT only","STRING","BLOB"],
+ a:[0],
+ concept:"Semi-structured data lands in a <b>VARIANT</b> column, which can hold any JSON-like value (object, array, scalar) up to <b>16 MB</b> compressed per value. You then navigate it with colon/bracket paths (<code>col:field</code>, <code>col['field']</code>) and <code>FLATTEN</code>.",
+ why:["<b>OBJECT</b> and <b>ARRAY</b> are specific semi-structured types, but the general catch-all for loaded JSON/Parquet/Avro is VARIANT.","<b>STRING</b> would store raw text, losing the parsed structure.","<b>BLOB</b> isn't a Snowflake data type."],
+ trap:"Semi-structured → VARIANT (max 16 MB per value). OBJECT/ARRAY are narrower subtypes."},
+
+{id:"dl319",sub:"External tables",
+ q:"When you CLONE a database, which objects are SKIPPED (not cloned)?",
+ opts:["External tables and internal named stages","Permanent tables and views","Sequences and file formats","Streams and tasks"],
+ a:[0],
+ concept:"A database/schema clone is zero-copy and includes most children, but it <b>skips external tables and internal named stages</b>. External tables reference outside files (nothing to zero-copy), and internal named stages hold files that aren't part of table storage. External tables also can't be cloned individually.",
+ why:["<b>Permanent tables and views</b> clone normally.","<b>Sequences and file formats</b> clone normally.","<b>Streams and tasks</b> clone (with some reset of stream offsets), so they aren't the skipped set."],
+ trap:"DB/schema clone skips external tables + internal named stages. Everything else comes along."},
+
+{id:"dl320",sub:"Object model",
+ q:"At which level of the object hierarchy does a FILE FORMAT object live?",
+ opts:["Schema level","Account level","Table level","Database level, above schemas"],
+ a:[0],
+ concept:"A <b>FILE FORMAT is a schema-level object</b>, like stages, pipes, streams, tasks, tables, views, sequences, and functions. You can define it once and reference it from many stages and COPY statements within reach of that schema.",
+ why:["<b>Account level</b> holds warehouses, databases, roles, users, shares, integrations, resource monitors — not file formats.","There is no <b>table-level</b> file-format object; a table stage exists but the file format is its own schema object.","There's no tier <b>between database and schema</b>; schema objects sit directly in a schema."],
+ trap:"File format, stage, pipe, stream, task = schema-level. Warehouse, database, role, share, integration = account-level."},
+];
+
+/* ---------- ENGINE (identical to the fixed v1) ---------- */
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const word=n=>({2:'TWO',3:'THREE',4:'FOUR'}[n]||n);
+let cur=0, picks=[], validated=false;
+const answers=[];
+const el=id=>document.getElementById(id);
+
+function start(){el('start').classList.add('hidden');el('quiz').classList.remove('hidden');render();}
+
+function buildMP(){
+  const mp=el('mp');mp.innerHTML='';
+  Q.forEach((_,i)=>{const b=document.createElement('i');
+    if(i<cur)b.className='done';else if(i===cur)b.className='cur';mp.appendChild(b);});
+}
+
+function render(){
+  validated=false;picks=[];
+  const q=Q[cur];
+  const disp=q.opts.map((t,i)=>({t,correct:q.a.includes(i)}));
+  shuffle(disp);
+  q._disp=disp; q._need=q.a.length;
+  buildMP();
+  el('counter').textContent=`Question ${cur+1} of ${Q.length}`;
+  el('qtext').textContent=q.q;
+  el('extra').innerHTML=q.sql?`<pre class="sql">${q.sql}</pre>`:'';
+  el('hint').textContent=q._need>1?`Select ${word(q._need)}.`:'';
+  const o=el('opts');o.innerHTML='';
+  disp.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';b.dataset.i=i;
+    b.innerHTML=`<span class="key">${String.fromCharCode(65+i)}</span><span>${opt.t}</span>`;
+    b.onclick=()=>pick(i);
+    o.appendChild(b);
+  });
+  el('fb').innerHTML='';
+  const act=el('action');act.textContent='Validate';act.disabled=true;
+}
+
+function pick(i){
+  if(validated)return;
+  const need=Q[cur]._need;
+  if(need>1){
+    const at=picks.indexOf(i);
+    if(at>-1)picks.splice(at,1);else if(picks.length<need)picks.push(i);
+  }else picks=[i];
+  document.querySelectorAll('#opts .opt').forEach(b=>b.classList.toggle('sel',picks.includes(+b.dataset.i)));
+  el('action').disabled=picks.length!==need;
+}
+
+const arrEq=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
+
+function onAction(){validated?next():validate();}
+
+function validate(){
+  validated=true;
+  const q=Q[cur], disp=q._disp;
+  const correctIdx=disp.map((o,i)=>o.correct?i:-1).filter(i=>i>=0);
+  const correct=arrEq(picks,correctIdx);
+  answers.push({id:q.id,sub:q.sub,correct});
+  document.querySelectorAll('#opts .opt').forEach(b=>{
+    const i=+b.dataset.i;b.disabled=true;
+    const isAns=disp[i].correct,isPick=picks.includes(i);
+    if(isAns&&isPick)b.classList.add('correct');
+    else if(isAns&&!isPick)b.classList.add('missed');
+    else if(!isAns&&isPick)b.classList.add('wrong');
+  });
+  const whyList=q.why.map(w=>`<li>${w}</li>`).join('');
+  const diagram=q.svg?`<div class="svgwrap">${q.svg}<div class="svgcap">${q.cap||''}</div></div>`:'';
+  el('fb').innerHTML=`
+    <div class="verdict ${correct?'good':'bad'}">${correct?'✓ Correct':'✗ Not quite'}</div>
+    <div class="explain">
+      <div class="concept"><span class="lbl">What's really going on</span>${q.concept}</div>
+      <div class="why"><span class="lbl">Why the other options are wrong</span><ul>${whyList}</ul></div>
+      <div class="trap"><span class="lbl">Exam trap — remember this</span>${q.trap}</div>
+      ${diagram}
+    </div>`;
+  el('action').textContent=cur===Q.length-1?'See results →':'Next →';
+}
+
+function next(){
+  cur++;
+  if(cur>=Q.length)showResults();
+  else{render();window.scrollTo({top:0,behavior:'smooth'});}
+}
+
+function showResults(){
+  el('quiz').classList.add('hidden');el('results').classList.remove('hidden');
+  const total=Q.length, got=answers.filter(a=>a.correct).length, pct=Math.round(got/total*100);
+  el('finalpct').textContent=`${pct}%`;
+  el('finalpct').style.color=pct>=80?'var(--ok)':pct>=67?'var(--amber)':'var(--bad)';
+  el('passmsg').innerHTML=`${got} / ${total} correct · pass mark ≈75% · <b>clear rule 80%</b> — ${pct>=80?'✅ domain CLEARED':'🔁 needs another re-drill'}`;
+  const subs={};
+  answers.forEach(a=>{(subs[a.sub]=subs[a.sub]||{c:0,t:0});subs[a.sub].t++;if(a.correct)subs[a.sub].c++;});
+  const bars=el('subbars');bars.innerHTML='';
+  Object.entries(subs).sort((a,b)=>a[1].c/a[1].t-b[1].c/b[1].t).forEach(([s,v])=>{
+    const p=Math.round(v.c/v.t*100), col=p>=67?'var(--ok)':p>=34?'var(--amber)':'var(--bad)';
+    bars.innerHTML+=`<div class="bar-row"><div class="bar-lab"><span>${s}</span><span>${v.c}/${v.t} · ${p}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div></div>`;
+  });
+  const weak=Object.entries(subs).filter(([,v])=>v.c/v.t<0.67).map(([s])=>s);
+  el('focusbox').innerHTML=`<b>Focus next:</b> ${weak.length?weak.join(', ')+' — review these before another attempt.':'Strong across the board. If ≥80%, Data Loading is CLEARED — on to the Monitoring drill.'}`;
+  buildSummary(pct,got,total,subs,weak);
+}
+
+function buildSummary(pct,got,total,subs,weak){
+  const lines=answers.map((a,i)=>`[Data Loading] Q${i+1} ${a.correct?'✓':'✗'} — ${a.sub}${a.correct?'':' — MISS: review '+a.sub}`).join('\n');
+  const tally=Object.entries(subs).map(([s,v])=>`${s} ${v.c}/${v.t}`).join(' · ');
+  el('summary').value=
+`SnowPro Core — RESULTS
+Session: 03-data-loading-drill-v2
+Domain: Data Loading (drill 1 of 8, re-drill)
+Overall: ${pct}% (${got}/${total})  |  clear rule 80% -> ${pct>=80?'CLEARED':'NEEDS RE-DRILL'}
+
+Per-question:
+${lines}
+
+Sub-topic tally: ${tally}
+Focus next: ${weak.length?weak.join(', '):'none — domain solid'}`;
+}
+
+function copySummary(){
+  const t=el('summary');t.select();
+  try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand('copy');}
+  const b=event.target,o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1600);
+}
+</script>
+</body>
+</html>
