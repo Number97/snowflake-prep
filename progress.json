@@ -2,11 +2,11 @@
   "exam": { "code": "COF-C02", "questions": 100, "minutes": 115, "passPct": 75 },
   "readyThresholdPct": 82,
   "clearRulePct": 80,
-  "overall": { "sessionsCleared": 0, "sessionsTotal": 11 },
+  "overall": { "sessionsCleared": 1, "sessionsTotal": 11 },
   "diagnostic": { "done": true, "scorePct": 40, "raw": "8/20" },
   "phase1_drills": [
-    { "n": 1, "domain": "Data Loading",        "slug": "data-loading",   "status": "needs-redrill", "diag": "1/4", "attempts": 2, "latestScore": 75, "seenQuestionIds": ["dl201","dl202","dl203","dl204","dl205","dl206","dl207","dl208","dl209","dl210","dl211","dl212","dl213","dl214","dl215","dl216","dl217","dl218","dl219","dl220","dl301","dl302","dl303","dl304","dl305","dl306","dl307","dl308","dl309","dl310","dl311","dl312","dl313","dl314","dl315","dl316","dl317","dl318","dl319","dl320"], "note": "Attempt 1=70%, attempt 2=75% (both below 80% clear rule). Weak now: Unload, Object model. Re-drill v3 (dl401-dl420) built, weighted to those. Earlier slot-A-bug build voided." },
-    { "n": 2, "domain": "Monitoring",          "slug": "monitoring",     "status": "todo",    "diag": "0/1", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
+    { "n": 1, "domain": "Data Loading",        "slug": "data-loading",   "status": "cleared", "diag": "1/4", "attempts": 3, "latestScore": 85, "seenQuestionIds": ["dl201-dl220","dl301-dl320","dl401-dl420"], "note": "CLEARED at 85% on v3 (attempt 3). Progression 70->75->85. Minor residual: one PUT/GET slip (small sample, domain cleared)." },
+    { "n": 2, "domain": "Monitoring",          "slug": "monitoring",     "status": "next",    "diag": "0/1", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 3, "domain": "Warehouses & Perf",   "slug": "warehouses-perf","status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 4, "domain": "Data Protection",     "slug": "data-protection","status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 5, "domain": "Architecture",        "slug": "architecture",   "status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
@@ -19,5 +19,5 @@
     { "n": 2, "type": "timed-115", "status": "locked", "latestScore": null },
     { "n": 3, "type": "timed-115", "status": "locked", "latestScore": null }
   ],
-  "nextSession": "Data Loading re-drill (v3) — focus Unload, Object model"
+  "nextSession": "Monitoring drill (drill 2 of 8)"
 }

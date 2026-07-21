@@ -110,16 +110,17 @@ snowpro-prep/
 
 ## 6. Design system (keep every artifact visually consistent)
 
-All quizzes share this identity — a clean "Snowflake data console" look. Do not drift to generic AI defaults (cream + terracotta, black + acid-green, newspaper columns).
+All quizzes share this identity — a **dark "Snowflake data console"** look (switched from light to dark on 2026-07-21 at the user's request; dark from now on). Do not drift to generic AI defaults (cream + terracotta, black + acid-green, newspaper columns). Keep the deep-navy background with cyan/blue Snowflake accents.
 
-**Color tokens (CSS variables):**
+**Color tokens (CSS variables) — DARK theme:**
 ```
---ice:#E8F0F6   (page bg)      --card:#FFFFFF     --ink:#0C2233   (text)
---muted:#54708A --line:#C9D9E6 --accent:#1467C8   (primary blue)
---cyan:#29B5E8  (Snowflake-ish accent)            --ok:#0F8A63    (correct/green)
---amber:#D9822B (partial/warn) --bad:#C64530       (wrong/red)
---codebg:#0C2233 --codetx:#D9E8F5  (SQL blocks)
+--bg:#0A1826    (page bg, deep navy) --card:#0F2233  (surface) --card2:#14293B (option/elevated)
+--ink:#E6F0F8   (text)               --muted:#8AA6BD (secondary text) --line:#26425B (borders)
+--accent:#2E8FE6 (primary blue)      --cyan:#29B5E8  (Snowflake accent)
+--ok:#2FBE8D    (correct/green)      --amber:#E3A24C (partial/warn)  --bad:#E26B54 (wrong/red)
+--codebg:#06121C --codetx:#CFE3F5    (SQL blocks)
 ```
+Option/verdict tints on dark: selected/correct/wrong use translucent fills (e.g. `rgba(47,190,141,.16)` for correct) with the solid token as the border; key chips flip to the token color with dark (`#06121C`) glyph text. Buttons: `--accent` bg, white text. SVG diagrams use dark-friendly fills (translucent navy/cyan) with light text — never light-on-light.
 
 **Typography (Google Fonts):**
 - Display / headings: **Space Grotesk** (700/500)

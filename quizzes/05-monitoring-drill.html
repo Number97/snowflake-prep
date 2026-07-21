@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnowPro Core — Monitoring Drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* DARK "Snowflake data console" theme — switched from light per user request (2026-07-21) */
+:root{
+  --bg:#0A1826; --card:#0F2233; --card2:#14293B; --ink:#E6F0F8; --muted:#8AA6BD;
+  --line:#26425B; --accent:#2E8FE6; --cyan:#29B5E8; --ok:#2FBE8D;
+  --amber:#E3A24C; --bad:#E26B54; --codebg:#06121C; --codetx:#CFE3F5; --glyph:#06121C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.55;padding:16px;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;box-shadow:0 4px 24px rgba(0,0,0,.38)}
+h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.7rem;line-height:1.15;letter-spacing:-.01em}
+h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.25rem;margin-bottom:6px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.14em;color:var(--cyan);margin-bottom:12px}
+.dombadge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);background:rgba(41,181,232,.12);border:1px solid rgba(41,181,232,.35);padding:4px 10px;border-radius:20px;margin-bottom:14px}
+p.lead{color:var(--muted);font-size:1rem;margin:14px 0 20px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.chip{flex:1;min-width:120px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center}
+.chip b{display:block;font-family:'IBM Plex Mono',monospace;font-size:1.35rem;color:var(--cyan);font-weight:500}
+.chip span{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+button{font-family:inherit;cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 26px;font-size:1rem;font-weight:600;width:100%;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{background:var(--card2);color:var(--muted);cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--cyan);border:1.5px solid var(--cyan)}
+.mp{display:flex;gap:3px;margin:0 0 18px;flex-wrap:wrap}
+.mp i{height:8px;flex:1;min-width:6px;background:var(--line);border-radius:2px;transition:background .3s}
+.mp i.done{background:var(--cyan)}
+.mp i.cur{background:var(--accent)}
+.counter{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);margin-bottom:10px}
+.qtext{font-size:1.12rem;font-weight:500;margin-bottom:16px;line-height:1.4}
+pre.sql{background:var(--codebg);color:var(--codetx);font-family:'IBM Plex Mono',monospace;font-size:.82rem;padding:14px 16px;border-radius:10px;overflow-x:auto;margin:0 0 16px;line-height:1.5;border:1px solid var(--line)}
+.hint{font-size:.8rem;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:12px}
+.opts{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.opt{display:flex;gap:12px;align-items:flex-start;background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;text-align:left;font-size:.96rem;color:var(--ink);width:100%;transition:.12s}
+.opt:hover:not(:disabled){border-color:var(--cyan);background:#16324A}
+.opt.sel{border-color:var(--accent);background:rgba(46,143,230,.20)}
+.opt .key{font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:500;background:var(--bg);border:1px solid var(--line);border-radius:6px;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink)}
+.opt.sel .key{background:var(--accent);color:#fff;border-color:var(--accent)}
+.opt.correct{border-color:var(--ok);background:rgba(47,190,141,.18)}
+.opt.correct .key{background:var(--ok);color:var(--glyph);border-color:var(--ok)}
+.opt.missed{border-color:var(--ok);border-style:dashed;background:rgba(47,190,141,.09)}
+.opt.wrong{border-color:var(--bad);background:rgba(226,107,84,.17)}
+.opt.wrong .key{background:var(--bad);color:var(--glyph);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.verdict{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:10px}
+.verdict.good{color:var(--ok)}
+.verdict.bad{color:var(--bad)}
+.explain{background:#10293D;border-left:4px solid var(--cyan);border-radius:0 12px 12px 0;padding:15px 16px;font-size:.93rem;color:var(--ink);margin-bottom:18px}
+.explain .lbl{font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);display:block;margin-bottom:4px}
+.explain .concept{margin-bottom:14px}
+.explain .why{margin-bottom:14px}
+.explain .why ul{margin:2px 0 0;padding-left:2px;list-style:none}
+.explain .why li{position:relative;padding-left:18px;margin-bottom:6px;line-height:1.4}
+.explain .why li::before{content:"✗";position:absolute;left:0;color:var(--bad);font-weight:700;font-size:.85em}
+.explain .trap{background:rgba(227,162,76,.12);border:1px solid rgba(227,162,76,.38);border-radius:8px;padding:10px 12px;margin-top:4px}
+.explain .trap .lbl{color:var(--amber)}
+.explain b{color:var(--cyan)}
+.explain code{font-family:'IBM Plex Mono',monospace;font-size:.85em;background:rgba(46,143,230,.20);color:#DCEBFB;padding:1px 5px;border-radius:4px}
+.svgwrap{background:#0C1E2E;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:18px 18px;border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0 0}
+.svgcap{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px}
+.bigpct{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:3.4rem;line-height:1;color:var(--cyan)}
+.passline{color:var(--muted);font-size:.9rem;margin:6px 0 20px}
+.bars{display:flex;flex-direction:column;gap:12px;margin:18px 0}
+.bar-row{display:flex;flex-direction:column;gap:5px}
+.bar-lab{display:flex;justify-content:space-between;font-size:.82rem;font-family:'IBM Plex Mono',monospace}
+.bar-track{height:10px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar-fill{height:100%;border-radius:6px}
+.focus{background:rgba(227,162,76,.10);border:1px solid rgba(227,162,76,.38);border-radius:12px;padding:14px 16px;margin:18px 0;font-size:.92rem}
+.focus b{color:var(--amber)}
+textarea{width:100%;height:230px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:var(--codebg);color:var(--codetx);border:1px solid var(--line);border-radius:10px;padding:12px;resize:vertical;line-height:1.5}
+.copybtn{margin:10px 0 4px;background:var(--ok);color:var(--glyph)}
+.hidden{display:none}
+.foot{text-align:center;color:var(--muted);font-size:.75rem;margin-top:18px;font-family:'IBM Plex Mono',monospace}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="start" class="card">
+  <div class="eyebrow">SnowPro Core · COF-C02 · Drill 2 of 8</div>
+  <h1>Monitoring</h1>
+  <p class="lead">INFORMATION_SCHEMA vs ACCOUNT_USAGE, resource monitors, and the Query Profile. This was your weakest diagnostic domain (0/1) — the retention/latency traps and resource-monitor actions are heavily tested. Clear it at <b>≥ 80%</b>.</p>
+  <div class="chips">
+    <div class="chip"><b>20</b><span>Questions</span></div>
+    <div class="chip"><b>Monitoring</b><span>Domain</span></div>
+    <div class="chip"><b>∞</b><span>No timer</span></div>
+  </div>
+  <button class="btn" onclick="start()">Start drill →</button>
+</section>
+
+<section id="quiz" class="card hidden">
+  <div class="mp" id="mp"></div>
+  <div class="counter" id="counter"></div>
+  <div class="dombadge">Monitoring</div>
+  <div class="qtext" id="qtext"></div>
+  <div id="extra"></div>
+  <div class="hint" id="hint"></div>
+  <div class="opts" id="opts"></div>
+  <div id="fb"></div>
+  <button class="btn" id="action" disabled onclick="onAction()">Validate</button>
+</section>
+
+<section id="results" class="card hidden">
+  <div class="eyebrow">Drill complete</div>
+  <h2>Your Monitoring score</h2>
+  <div class="bigpct" id="finalpct"></div>
+  <div class="passline" id="passmsg"></div>
+  <div class="bars" id="subbars"></div>
+  <div class="focus" id="focusbox"></div>
+  <h2 style="margin-top:8px">Copy-paste summary</h2>
+  <p class="lead" style="margin:6px 0 8px;font-size:.88rem">Paste this back to Claude as <code style="font-family:'IBM Plex Mono',monospace">RESULTS: …</code> to update your progress.</p>
+  <button class="btn copybtn" onclick="copySummary()">📋 Copy summary</button>
+  <textarea id="summary" readonly></textarea>
+  <button class="btn ghost" style="margin-top:14px" onclick="location.reload()">↻ Retake (reshuffles)</button>
+  <div class="foot">snowpro-prep · 05-monitoring-drill</div>
+</section>
+
+</div>
+<script>
+/* MONITORING DRILL — build-quiz engine (R1 shuffle, R2 feedback-only diagram, R3 deep teaching).
+   Fresh IDs mon01–mon20. */
+const Q=[
+{id:"mon01",sub:"IS vs AU",
+ q:"How long does the SNOWFLAKE.ACCOUNT_USAGE schema retain historical data?",
+ opts:["365 days (1 year)","7 days","14 days","90 days"],
+ a:[0],
+ concept:"<b>ACCOUNT_USAGE retains 365 days</b> of account-wide history — it's the source for long-term auditing and trend analysis. The trade-off is <b>latency</b> (data can lag 45 min to ~3 hours) and it lives in the read-only, shared <code>SNOWFLAKE</code> database.",
+ why:["<b>7 days</b> is closer to some INFORMATION_SCHEMA windows / Fail-safe, not ACCOUNT_USAGE.","<b>14 days</b> is Snowpipe load history, unrelated to ACCOUNT_USAGE retention.","<b>90 days</b> is the max Enterprise Time Travel, not a monitoring retention."],
+ trap:"ACCOUNT_USAGE = 365 days, account-wide, but delayed. It's the 'audit / long-term' source."},
+
+{id:"mon02",sub:"IS vs AU",
+ q:"You need to see queries that are RUNNING or QUEUED right now. Which source should you use?",
+ opts:["INFORMATION_SCHEMA.QUERY_HISTORY() — near real-time","ACCOUNT_USAGE.QUERY_HISTORY — it's always current","ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY","The Fail-safe log"],
+ a:[0],
+ concept:"For live/active queries use the <b>INFORMATION_SCHEMA</b> table function <code>QUERY_HISTORY()</code>, filtering <code>EXECUTION_STATUS IN ('RUNNING','QUEUED')</code>. INFORMATION_SCHEMA is <b>near real-time</b>. ACCOUNT_USAGE lags 45 min–3 h, so it can't show what's happening this instant.",
+ why:["<b>ACCOUNT_USAGE.QUERY_HISTORY</b> has 45 min–3 h latency — not current.","<b>WAREHOUSE_METERING_HISTORY</b> reports credit consumption, not query status.","There is no queryable <b>Fail-safe log</b> — Fail-safe is a recovery mechanism, not a monitoring view."],
+ trap:"Real-time / active queries → INFORMATION_SCHEMA (near real-time). Historical/audit → ACCOUNT_USAGE (delayed, 365 days)."},
+
+{id:"mon03",sub:"IS vs AU",
+ q:"Which of these can show information about objects that have been DROPPED?",
+ opts:["ACCOUNT_USAGE views (they include dropped objects, flagged by a DELETED timestamp)","INFORMATION_SCHEMA views","Neither — dropped objects are never visible","Only the Query Profile"],
+ a:[0],
+ concept:"<b>ACCOUNT_USAGE includes dropped objects</b> — rows carry a <code>DELETED</code> column so you can see history for things that no longer exist. <b>INFORMATION_SCHEMA shows only currently existing objects</b> in the current database.",
+ why:["<b>INFORMATION_SCHEMA</b> reflects the live catalog only — dropped objects vanish from it.","'Never visible' is false — that's exactly what ACCOUNT_USAGE preserves.","The <b>Query Profile</b> analyzes one query's execution; it doesn't list objects."],
+ trap:"Dropped objects appear only in ACCOUNT_USAGE (via the DELETED column). INFORMATION_SCHEMA = current objects only."},
+
+{id:"mon04",sub:"IS vs AU",
+ q:"What is the SCOPE of the INFORMATION_SCHEMA — where does it exist and what does it cover?",
+ opts:["It exists in every database and is scoped to that database","It is a single schema in the SNOWFLAKE database, covering the whole account","It exists once per account and covers all databases","It only exists in the SNOWFLAKE_SAMPLE_DATA database"],
+ a:[0],
+ concept:"<b>INFORMATION_SCHEMA is a per-database schema</b> — every database has its own, and queries are scoped to that database (plus account-level metadata via some views/table functions). By contrast, <b>ACCOUNT_USAGE</b> is a single schema in the shared <code>SNOWFLAKE</code> database covering the entire account.",
+ why:["That description (single schema in SNOWFLAKE, account-wide) is <b>ACCOUNT_USAGE</b>, not INFORMATION_SCHEMA.","It doesn't exist 'once per account' — it's replicated in each database.","It exists in every database, not just sample data."],
+ trap:"INFORMATION_SCHEMA = one per database (database-scoped). ACCOUNT_USAGE = one schema in SNOWFLAKE db (account-scoped)."},
+
+{id:"mon05",sub:"IS vs AU",
+ q:"Which pair correctly describes ACCOUNT_USAGE's trade-off versus INFORMATION_SCHEMA? (Select TWO)",
+ opts:["ACCOUNT_USAGE has longer retention (365 days)","ACCOUNT_USAGE has higher latency (45 min–3 h)","ACCOUNT_USAGE is always more real-time","ACCOUNT_USAGE is scoped to a single database"],
+ a:[0,1],
+ concept:"ACCOUNT_USAGE trades freshness for depth: <b>365-day, account-wide history</b> but with <b>45 min–3 h latency</b>. INFORMATION_SCHEMA is the opposite — near real-time and database-scoped, but short retention and no dropped objects.",
+ why:["'Always more real-time' is false — ACCOUNT_USAGE is <i>delayed</i>; INFORMATION_SCHEMA is the fresh one.","'Scoped to a single database' describes INFORMATION_SCHEMA, not ACCOUNT_USAGE (which is account-wide)."],
+ trap:"ACCOUNT_USAGE: long retention + account-wide + dropped objects, BUT delayed. INFORMATION_SCHEMA: fresh + db-scoped, BUT short."},
+
+{id:"mon06",sub:"SNOWFLAKE db",
+ q:"By default, which role can query the SNOWFLAKE database (ACCOUNT_USAGE), and how is access extended to others?",
+ opts:["ACCOUNTADMIN by default; grant IMPORTED PRIVILEGES on the SNOWFLAKE database to other roles","SYSADMIN by default; it cannot be granted to anyone else","PUBLIC by default; everyone can already see it","Only ORGADMIN, and access can never be delegated"],
+ a:[0],
+ concept:"The <b>SNOWFLAKE</b> database is a shared, read-only database. By default only <b>ACCOUNTADMIN</b> can query it; to let another role (e.g. a monitoring role) use ACCOUNT_USAGE, you grant <b>IMPORTED PRIVILEGES on the SNOWFLAKE database</b> to that role.",
+ why:["<b>SYSADMIN</b> isn't the default here, and access <i>can</i> be delegated.","It is <b>not</b> visible to PUBLIC by default.","<b>ORGADMIN</b> handles organization-level tasks; it isn't the ACCOUNT_USAGE default, and access is delegable."],
+ trap:"ACCOUNT_USAGE default = ACCOUNTADMIN. Delegate via GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE."},
+
+{id:"mon07",sub:"Resource monitors",
+ q:"Which role is required to CREATE a resource monitor?",
+ opts:["ACCOUNTADMIN","SYSADMIN","USERADMIN","Any role with CREATE WAREHOUSE"],
+ a:[0],
+ concept:"Only <b>ACCOUNTADMIN</b> can create resource monitors (and it can grant MONITOR/MODIFY privileges on existing monitors to other roles). Resource monitors track credit consumption and can act when thresholds are hit.",
+ why:["<b>SYSADMIN</b> creates/owns most objects (warehouses, databases) but not resource monitors.","<b>USERADMIN</b> manages users and roles, not resource monitors.","Having <b>CREATE WAREHOUSE</b> doesn't grant the ability to create monitors."],
+ trap:"Resource monitors are an ACCOUNTADMIN-only creation. (Like account-level credit governance generally.)"},
+
+{id:"mon08",sub:"Resource monitors",
+ q:"What ACTIONS can a resource monitor trigger when a credit threshold is reached? (Select THREE)",
+ opts:["Notify","Suspend","Suspend Immediate","Resize the warehouse down"],
+ a:[0,1,2],
+ concept:"A resource monitor's three actions are <b>NOTIFY</b> (send an alert, no enforcement), <b>SUSPEND</b> (suspend the warehouse after letting running queries finish), and <b>SUSPEND_IMMEDIATE</b> (suspend now, cancelling running queries). You attach them to percentage-of-quota triggers.",
+ why:["<b>Resizing the warehouse down</b> is not a resource-monitor action — monitors suspend or notify; they don't rescale."],
+ trap:"Three actions: NOTIFY, SUSPEND, SUSPEND_IMMEDIATE. They can't resize or drop warehouses."},
+
+{id:"mon09",sub:"Resource monitors",
+ q:"What is the difference between the SUSPEND and SUSPEND_IMMEDIATE resource-monitor actions?",
+ opts:["SUSPEND lets running queries finish first; SUSPEND_IMMEDIATE cancels them right away","SUSPEND cancels queries; SUSPEND_IMMEDIATE lets them finish","They are identical, just different names","SUSPEND applies to serverless; SUSPEND_IMMEDIATE applies to warehouses"],
+ a:[0],
+ concept:"<b>SUSPEND</b> stops the warehouse but <b>allows in-flight queries to complete</b> (graceful). <b>SUSPEND_IMMEDIATE</b> stops it and <b>cancels running queries</b> (hard stop) to prevent any further credit burn.",
+ why:["That's reversed — SUSPEND is the graceful one.","They are <b>not</b> identical; the difference is what happens to running queries.","Neither is defined by serverless vs warehouse; both act on the monitored warehouse(s)."],
+ trap:"SUSPEND = finish running queries then stop. SUSPEND_IMMEDIATE = kill running queries now."},
+
+{id:"mon10",sub:"Resource monitors",
+ q:"At what levels can a resource monitor be assigned?",
+ opts:["At the account level (all warehouses) and/or to specific individual warehouses","Only to a single warehouse, never the account","Only at the account level, never per warehouse","To individual queries"],
+ a:[0],
+ concept:"A resource monitor can be set at the <b>account level</b> (governing total credit usage across all warehouses) and/or assigned to <b>specific warehouses</b>. A given warehouse can be controlled by at most one warehouse-level monitor (plus the account-level one).",
+ why:["It's not single-warehouse-only — an account-level monitor exists.","It's not account-only — you can target individual warehouses.","Monitors act on warehouses, not on individual queries."],
+ trap:"Resource monitor scope = account-level OR per-warehouse. One warehouse-level monitor per warehouse."},
+
+{id:"mon11",sub:"Resource monitors",
+ q:"Resource-monitor triggers fire based on what, and what happens when the quota period ends?",
+ opts:["A percentage of the credit quota; the used-credits counter resets each schedule interval (e.g. monthly)","A fixed dollar amount; the quota never resets","Number of queries run; it resets hourly","Bytes scanned; it never resets"],
+ a:[0],
+ concept:"Triggers are defined as a <b>% of the credit quota</b> (e.g. notify at 75%, suspend at 100%), and the quota is tied to a <b>reset schedule</b> (frequency such as daily, weekly, monthly, yearly — or never), at which point the consumed-credits counter resets.",
+ why:["Quotas are in <b>credits</b>, not dollars, and they <i>do</i> reset on schedule.","Triggers aren't based on query count or an hourly reset.","They aren't based on bytes scanned, and they do reset per the frequency."],
+ trap:"Triggers = % of a CREDIT quota; quota resets on its frequency schedule. Not dollars, not query counts."},
+
+{id:"mon12",sub:"Query Profile",
+ q:"What is the primary purpose of the Query Profile in Snowsight?",
+ opts:["A visual breakdown of a query's execution plan and per-operator statistics, to find bottlenecks","To schedule queries to run automatically","To grant privileges on a query's underlying tables","To store the 24-hour result cache"],
+ a:[0],
+ concept:"The <b>Query Profile</b> shows a query's execution as a tree of operators (table scans, joins, aggregations) with statistics per node — rows, time, and where the work concentrates — so you can diagnose <b>why a query is slow</b>.",
+ why:["<b>Scheduling</b> queries is done with tasks, not the profile.","<b>Granting privileges</b> is access control, unrelated to the profile.","The <b>result cache</b> is a separate cloud-services feature; the profile just analyzes execution."],
+ trap:"Query Profile = visual execution plan + operator stats for tuning. It diagnoses, it doesn't schedule or grant."},
+
+{id:"mon13",sub:"Query Profile",
+ q:"In a Query Profile, which statistic tells you how effective partition PRUNING was?",
+ opts:["Partitions scanned vs. partitions total","Bytes spilled to local storage","Rows returned to the client","Percentage of the result cache hit"],
+ a:[0],
+ concept:"<b>Partitions scanned / partitions total</b> shows pruning efficiency — if the optimizer scanned only a small fraction of micro-partitions, pruning worked well; scanning nearly all of them signals poor pruning (e.g. bad clustering or a non-selective filter).",
+ why:["<b>Bytes spilled</b> indicates memory pressure (warehouse too small), not pruning.","<b>Rows returned</b> is output size, unrelated to how many partitions were read.","<b>Result cache hit</b> means the query didn't execute at all — no pruning to measure."],
+ trap:"Pruning quality = 'partitions scanned vs total'. Few scanned = good pruning. Spilling is a separate (memory) signal."},
+
+{id:"mon14",sub:"Query Profile",
+ q:"A Query Profile shows a large amount of 'bytes spilled to local/remote storage'. What does this usually indicate?",
+ opts:["The warehouse ran out of memory for the operation — consider a larger size","Pruning was extremely efficient","The result was served entirely from cache","A network policy blocked the query"],
+ a:[0],
+ concept:"<b>Spilling</b> means an operation (e.g. a large sort or join) exceeded the warehouse's memory and had to write to local disk — and if that fills, to remote storage. It's a classic sign the <b>warehouse is undersized</b> for the workload; scaling up gives more memory.",
+ why:["Spilling is a <b>bad</b> sign, not a pruning success.","Cache hits mean no execution — there'd be nothing to spill.","<b>Network policies</b> control IP access, unrelated to spilling."],
+ trap:"Bytes spilled (local→remote) = out of memory → scale UP the warehouse. Remote spilling is worse than local."},
+
+{id:"mon15",sub:"Views & functions",
+ q:"Which view/table would you use to see CREDITS consumed per warehouse over time (for billing/monitoring)?",
+ opts:["WAREHOUSE_METERING_HISTORY","LOGIN_HISTORY","ACCESS_HISTORY","COPY_HISTORY"],
+ a:[0],
+ concept:"<b>WAREHOUSE_METERING_HISTORY</b> (in ACCOUNT_USAGE, and as an INFORMATION_SCHEMA table function) reports credits consumed per warehouse per hour — the go-to for compute cost monitoring.",
+ why:["<b>LOGIN_HISTORY</b> tracks authentication events, not credits.","<b>ACCESS_HISTORY</b> tracks which objects/columns queries touched (governance).","<b>COPY_HISTORY</b> tracks file loads, not warehouse credits."],
+ trap:"Credits per warehouse over time = WAREHOUSE_METERING_HISTORY. Match the view name to the metric it reports."},
+
+{id:"mon16",sub:"Views & functions",
+ q:"Which ACCOUNT_USAGE view lets you audit WHICH users read WHICH tables and columns (data governance)?",
+ opts:["ACCESS_HISTORY (Enterprise Edition and above)","QUERY_HISTORY","LOGIN_HISTORY","TASK_HISTORY"],
+ a:[0],
+ concept:"<b>ACCESS_HISTORY</b> records the objects — down to columns — that each query read or wrote, which is essential for governance and compliance. It requires <b>Enterprise Edition or higher</b>.",
+ why:["<b>QUERY_HISTORY</b> shows the query text and stats but not a structured object/column access map.","<b>LOGIN_HISTORY</b> is authentication events only.","<b>TASK_HISTORY</b> tracks scheduled task runs."],
+ trap:"Who-touched-what auditing = ACCESS_HISTORY (Enterprise+). QUERY_HISTORY shows queries, not fine-grained access lineage."},
+
+{id:"mon17",sub:"Views & functions",
+ q:"You want a 365-day audit of user login attempts (including failures). Which is the best source?",
+ opts:["ACCOUNT_USAGE.LOGIN_HISTORY","INFORMATION_SCHEMA.LOGIN_HISTORY()","The Query Profile","WAREHOUSE_LOAD_HISTORY"],
+ a:[0],
+ concept:"For a long-term audit, use the <b>ACCOUNT_USAGE.LOGIN_HISTORY</b> view — 365 days, account-wide, including successful and failed logins with the client/auth details. The INFORMATION_SCHEMA table function of the same name exists but has a much shorter window.",
+ why:["<b>INFORMATION_SCHEMA.LOGIN_HISTORY()</b> is near real-time but short-retention — wrong for a 365-day audit.","The <b>Query Profile</b> analyzes single-query execution, not logins.","<b>WAREHOUSE_LOAD_HISTORY</b> reports warehouse query load/concurrency, not logins."],
+ trap:"Long-term login audit → ACCOUNT_USAGE.LOGIN_HISTORY (365 days). Same-named INFORMATION_SCHEMA function = fresh but short."},
+
+{id:"mon18",sub:"Views & functions",
+ q:"To review data-load results and errors (bulk COPY and Snowpipe) over the last several weeks, which is most appropriate?",
+ opts:["ACCOUNT_USAGE.COPY_HISTORY / the COPY_HISTORY table function","WAREHOUSE_METERING_HISTORY","ACCESS_HISTORY","RESOURCE_MONITORS view"],
+ a:[0],
+ concept:"<b>COPY_HISTORY</b> reports load activity — files, rows loaded, and errors — for both bulk <code>COPY INTO</code> and Snowpipe. The ACCOUNT_USAGE view gives long history; the INFORMATION_SCHEMA <code>COPY_HISTORY()</code> table function gives a fresher, shorter window.",
+ why:["<b>WAREHOUSE_METERING_HISTORY</b> is about credits, not load results.","<b>ACCESS_HISTORY</b> is object/column read-write auditing, not load errors.","There's no monitoring value in a 'RESOURCE_MONITORS view' for load errors — monitors govern credits."],
+ trap:"Load results/errors over time = COPY_HISTORY (covers COPY + Snowpipe). Credits = metering; access = ACCESS_HISTORY."},
+
+{id:"mon19",sub:"IS vs AU",
+ q:"Which statement about INFORMATION_SCHEMA table functions (e.g. QUERY_HISTORY()) is TRUE?",
+ opts:["They return near-real-time data but with shorter retention than ACCOUNT_USAGE","They return data older than ACCOUNT_USAGE","They include dropped objects like ACCOUNT_USAGE does","They are only available to ACCOUNTADMIN"],
+ a:[0],
+ concept:"INFORMATION_SCHEMA table functions are <b>near real-time</b> — great for current/recent activity — but retain far less history than ACCOUNT_USAGE and only reflect <b>currently existing</b> objects. They're available to roles with access to the relevant objects, not just ACCOUNTADMIN.",
+ why:["They return <b>fresher</b>, not older, data than ACCOUNT_USAGE.","They do <b>not</b> include dropped objects — that's an ACCOUNT_USAGE feature.","They're <b>not</b> ACCOUNTADMIN-only; the SNOWFLAKE db (ACCOUNT_USAGE) is the one gated by default."],
+ trap:"INFORMATION_SCHEMA = fresh but short + current objects only. The default-gated one is ACCOUNT_USAGE (SNOWFLAKE db)."},
+
+{id:"mon20",sub:"Resource monitors",
+ q:"A resource monitor is set only to NOTIFY at 100% of quota (no suspend action). The warehouse hits 100%. What happens?",
+ opts:["An alert is sent, but the warehouse keeps running and consuming credits","The warehouse is suspended automatically at 100%","Running queries are cancelled immediately","The warehouse is dropped"],
+ a:[0],
+ concept:"<b>NOTIFY only alerts</b> — it does not stop anything. Without a SUSPEND or SUSPEND_IMMEDIATE trigger, the warehouse <b>keeps running and burning credits</b> past the quota. To actually cap spend you must add a suspend action.",
+ why:["Auto-suspend requires an explicit <b>SUSPEND</b> trigger, which isn't configured here.","Cancelling queries requires <b>SUSPEND_IMMEDIATE</b>, also not set.","Monitors never <b>drop</b> warehouses."],
+ trap:"NOTIFY = alert only, no enforcement. Credits keep flowing unless a SUSPEND / SUSPEND_IMMEDIATE trigger exists."},
+];
+
+/* ---------- ENGINE (identical shuffle + deep-teaching engine) ---------- */
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const word=n=>({2:'TWO',3:'THREE',4:'FOUR'}[n]||n);
+let cur=0, picks=[], validated=false;
+const answers=[];
+const el=id=>document.getElementById(id);
+
+function start(){el('start').classList.add('hidden');el('quiz').classList.remove('hidden');render();}
+
+function buildMP(){
+  const mp=el('mp');mp.innerHTML='';
+  Q.forEach((_,i)=>{const b=document.createElement('i');
+    if(i<cur)b.className='done';else if(i===cur)b.className='cur';mp.appendChild(b);});
+}
+
+function render(){
+  validated=false;picks=[];
+  const q=Q[cur];
+  const disp=q.opts.map((t,i)=>({t,correct:q.a.includes(i)}));
+  shuffle(disp);
+  q._disp=disp; q._need=q.a.length;
+  buildMP();
+  el('counter').textContent=`Question ${cur+1} of ${Q.length}`;
+  el('qtext').textContent=q.q;
+  el('extra').innerHTML=q.sql?`<pre class="sql">${q.sql}</pre>`:'';
+  el('hint').textContent=q._need>1?`Select ${word(q._need)}.`:'';
+  const o=el('opts');o.innerHTML='';
+  disp.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';b.dataset.i=i;
+    b.innerHTML=`<span class="key">${String.fromCharCode(65+i)}</span><span>${opt.t}</span>`;
+    b.onclick=()=>pick(i);
+    o.appendChild(b);
+  });
+  el('fb').innerHTML='';
+  const act=el('action');act.textContent='Validate';act.disabled=true;
+}
+
+function pick(i){
+  if(validated)return;
+  const need=Q[cur]._need;
+  if(need>1){
+    const at=picks.indexOf(i);
+    if(at>-1)picks.splice(at,1);else if(picks.length<need)picks.push(i);
+  }else picks=[i];
+  document.querySelectorAll('#opts .opt').forEach(b=>b.classList.toggle('sel',picks.includes(+b.dataset.i)));
+  el('action').disabled=picks.length!==need;
+}
+
+const arrEq=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
+
+function onAction(){validated?next():validate();}
+
+function validate(){
+  validated=true;
+  const q=Q[cur], disp=q._disp;
+  const correctIdx=disp.map((o,i)=>o.correct?i:-1).filter(i=>i>=0);
+  const correct=arrEq(picks,correctIdx);
+  answers.push({id:q.id,sub:q.sub,correct});
+  document.querySelectorAll('#opts .opt').forEach(b=>{
+    const i=+b.dataset.i;b.disabled=true;
+    const isAns=disp[i].correct,isPick=picks.includes(i);
+    if(isAns&&isPick)b.classList.add('correct');
+    else if(isAns&&!isPick)b.classList.add('missed');
+    else if(!isAns&&isPick)b.classList.add('wrong');
+  });
+  const whyList=q.why.map(w=>`<li>${w}</li>`).join('');
+  const diagram=q.svg?`<div class="svgwrap">${q.svg}<div class="svgcap">${q.cap||''}</div></div>`:'';
+  el('fb').innerHTML=`
+    <div class="verdict ${correct?'good':'bad'}">${correct?'✓ Correct':'✗ Not quite'}</div>
+    <div class="explain">
+      <div class="concept"><span class="lbl">What's really going on</span>${q.concept}</div>
+      <div class="why"><span class="lbl">Why the other options are wrong</span><ul>${whyList}</ul></div>
+      <div class="trap"><span class="lbl">Exam trap — remember this</span>${q.trap}</div>
+      ${diagram}
+    </div>`;
+  el('action').textContent=cur===Q.length-1?'See results →':'Next →';
+}
+
+function next(){
+  cur++;
+  if(cur>=Q.length)showResults();
+  else{render();window.scrollTo({top:0,behavior:'smooth'});}
+}
+
+function showResults(){
+  el('quiz').classList.add('hidden');el('results').classList.remove('hidden');
+  const total=Q.length, got=answers.filter(a=>a.correct).length, pct=Math.round(got/total*100);
+  el('finalpct').textContent=`${pct}%`;
+  el('finalpct').style.color=pct>=80?'var(--ok)':pct>=67?'var(--amber)':'var(--bad)';
+  el('passmsg').innerHTML=`${got} / ${total} correct · pass mark ≈75% · <b>clear rule 80%</b> — ${pct>=80?'✅ domain CLEARED':'🔁 needs a re-drill'}`;
+  const subs={};
+  answers.forEach(a=>{(subs[a.sub]=subs[a.sub]||{c:0,t:0});subs[a.sub].t++;if(a.correct)subs[a.sub].c++;});
+  const bars=el('subbars');bars.innerHTML='';
+  Object.entries(subs).sort((a,b)=>a[1].c/a[1].t-b[1].c/b[1].t).forEach(([s,v])=>{
+    const p=Math.round(v.c/v.t*100), col=p>=67?'var(--ok)':p>=34?'var(--amber)':'var(--bad)';
+    bars.innerHTML+=`<div class="bar-row"><div class="bar-lab"><span>${s}</span><span>${v.c}/${v.t} · ${p}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div></div>`;
+  });
+  const weak=Object.entries(subs).filter(([,v])=>v.c/v.t<0.67).map(([s])=>s);
+  el('focusbox').innerHTML=`<b>Focus next:</b> ${weak.length?weak.join(', ')+' — review these before another attempt.':'Strong across the board. If ≥80%, Monitoring is CLEARED — on to Warehouses & Performance.'}`;
+  buildSummary(pct,got,total,subs,weak);
+}
+
+function buildSummary(pct,got,total,subs,weak){
+  const lines=answers.map((a,i)=>`[Monitoring] Q${i+1} ${a.correct?'✓':'✗'} — ${a.sub}${a.correct?'':' — MISS: review '+a.sub}`).join('\n');
+  const tally=Object.entries(subs).map(([s,v])=>`${s} ${v.c}/${v.t}`).join(' · ');
+  el('summary').value=
+`SnowPro Core — RESULTS
+Session: 05-monitoring-drill
+Domain: Monitoring (drill 2 of 8)
+Overall: ${pct}% (${got}/${total})  |  clear rule 80% -> ${pct>=80?'CLEARED':'NEEDS RE-DRILL'}
+
+Per-question:
+${lines}
+
+Sub-topic tally: ${tally}
+Focus next: ${weak.length?weak.join(', '):'none — domain solid'}`;
+}
+
+function copySummary(){
+  const t=el('summary');t.select();
+  try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand('copy');}
+  const b=event.target,o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1600);
+}
+</script>
+</body>
+</html>
