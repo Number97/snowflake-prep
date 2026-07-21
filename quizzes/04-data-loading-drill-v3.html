@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnowPro Core — Data Loading Re-Drill v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ice:#E8F0F6; --card:#FFFFFF; --ink:#0C2233; --muted:#54708A;
+  --line:#C9D9E6; --accent:#1467C8; --cyan:#29B5E8; --ok:#0F8A63;
+  --amber:#D9822B; --bad:#C64530; --codebg:#0C2233; --codetx:#D9E8F5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--ice);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.55;padding:16px;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;box-shadow:0 2px 14px rgba(12,34,51,.05)}
+h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.7rem;line-height:1.15;letter-spacing:-.01em}
+h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.25rem;margin-bottom:6px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.14em;color:var(--cyan);margin-bottom:12px}
+.dombadge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);background:#E3EEFA;border:1px solid #BBD4F2;padding:4px 10px;border-radius:20px;margin-bottom:14px}
+p.lead{color:var(--muted);font-size:1rem;margin:14px 0 20px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.chip{flex:1;min-width:120px;background:var(--ice);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center}
+.chip b{display:block;font-family:'IBM Plex Mono',monospace;font-size:1.35rem;color:var(--accent);font-weight:500}
+.chip span{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+button{font-family:inherit;cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 26px;font-size:1rem;font-weight:600;width:100%;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{background:var(--line);color:var(--muted);cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}
+.mp{display:flex;gap:3px;margin:0 0 18px;flex-wrap:wrap}
+.mp i{height:8px;flex:1;min-width:6px;background:var(--line);border-radius:2px;transition:background .3s}
+.mp i.done{background:var(--cyan)}
+.mp i.cur{background:var(--accent)}
+.counter{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);margin-bottom:10px}
+.qtext{font-size:1.12rem;font-weight:500;margin-bottom:16px;line-height:1.4}
+pre.sql{background:var(--codebg);color:var(--codetx);font-family:'IBM Plex Mono',monospace;font-size:.82rem;padding:14px 16px;border-radius:10px;overflow-x:auto;margin:0 0 16px;line-height:1.5}
+.hint{font-size:.8rem;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:12px}
+.opts{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.opt{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;text-align:left;font-size:.96rem;color:var(--ink);width:100%;transition:.12s}
+.opt:hover:not(:disabled){border-color:var(--cyan);background:#F5FAFD}
+.opt.sel{border-color:var(--accent);background:#EAF2FC}
+.opt .key{font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:500;background:var(--ice);border:1px solid var(--line);border-radius:6px;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.opt.sel .key{background:var(--accent);color:#fff;border-color:var(--accent)}
+.opt.correct{border-color:var(--ok);background:#E7F5EF}
+.opt.correct .key{background:var(--ok);color:#fff;border-color:var(--ok)}
+.opt.missed{border-color:var(--ok);border-style:dashed;background:#F1FAF5}
+.opt.wrong{border-color:var(--bad);background:#FBEDEA}
+.opt.wrong .key{background:var(--bad);color:#fff;border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.verdict{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:10px}
+.verdict.good{color:var(--ok)}
+.verdict.bad{color:var(--bad)}
+.explain{background:#F3F9FD;border-left:4px solid var(--cyan);border-radius:0 12px 12px 0;padding:15px 16px;font-size:.93rem;color:var(--ink);margin-bottom:18px}
+.explain .lbl{font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);display:block;margin-bottom:4px}
+.explain .concept{margin-bottom:14px}
+.explain .why{margin-bottom:14px}
+.explain .why ul{margin:2px 0 0;padding-left:2px;list-style:none}
+.explain .why li{position:relative;padding-left:18px;margin-bottom:6px;line-height:1.4}
+.explain .why li::before{content:"✗";position:absolute;left:0;color:var(--bad);font-weight:700;font-size:.85em}
+.explain .trap{background:#FFF6EC;border:1px solid #F0D3AC;border-radius:8px;padding:10px 12px;margin-top:4px}
+.explain .trap .lbl{color:var(--amber)}
+.explain b{color:var(--accent)}
+.explain code{font-family:'IBM Plex Mono',monospace;font-size:.85em;background:#E3EEFA;padding:1px 5px;border-radius:4px}
+.svgwrap{background:#F7FBFE;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:18px 18px;border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0 0}
+.svgcap{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px}
+.bigpct{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:3.4rem;line-height:1;color:var(--accent)}
+.passline{color:var(--muted);font-size:.9rem;margin:6px 0 20px}
+.bars{display:flex;flex-direction:column;gap:12px;margin:18px 0}
+.bar-row{display:flex;flex-direction:column;gap:5px}
+.bar-lab{display:flex;justify-content:space-between;font-size:.82rem;font-family:'IBM Plex Mono',monospace}
+.bar-track{height:10px;background:var(--ice);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar-fill{height:100%;border-radius:6px}
+.focus{background:#FFF6EC;border:1px solid #F0D3AC;border-radius:12px;padding:14px 16px;margin:18px 0;font-size:.92rem}
+.focus b{color:var(--amber)}
+textarea{width:100%;height:230px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:var(--codebg);color:var(--codetx);border:1px solid var(--line);border-radius:10px;padding:12px;resize:vertical;line-height:1.5}
+.copybtn{margin:10px 0 4px;background:var(--ok)}
+.hidden{display:none}
+.foot{text-align:center;color:var(--muted);font-size:.75rem;margin-top:18px;font-family:'IBM Plex Mono',monospace}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="start" class="card">
+  <div class="eyebrow">SnowPro Core · COF-C02 · Drill 1 of 8 · RE-DRILL v3</div>
+  <h1>Data Loading — Re-Drill v3</h1>
+  <p class="lead">So close — last attempt was <b>75%</b> (clear rule 80%). Fresh set of 20 new questions, loaded toward the two areas still costing you: <b>Unload</b> and the <b>object hierarchy</b> (schema-level vs account-level). Nail these and the domain is done.</p>
+  <div class="chips">
+    <div class="chip"><b>20</b><span>Questions</span></div>
+    <div class="chip"><b>Loading</b><span>Domain</span></div>
+    <div class="chip"><b>∞</b><span>No timer</span></div>
+  </div>
+  <button class="btn" onclick="start()">Start re-drill →</button>
+</section>
+
+<section id="quiz" class="card hidden">
+  <div class="mp" id="mp"></div>
+  <div class="counter" id="counter"></div>
+  <div class="dombadge">Data Loading</div>
+  <div class="qtext" id="qtext"></div>
+  <div id="extra"></div>
+  <div class="hint" id="hint"></div>
+  <div class="opts" id="opts"></div>
+  <div id="fb"></div>
+  <button class="btn" id="action" disabled onclick="onAction()">Validate</button>
+</section>
+
+<section id="results" class="card hidden">
+  <div class="eyebrow">Re-drill complete</div>
+  <h2>Your Data Loading score</h2>
+  <div class="bigpct" id="finalpct"></div>
+  <div class="passline" id="passmsg"></div>
+  <div class="bars" id="subbars"></div>
+  <div class="focus" id="focusbox"></div>
+  <h2 style="margin-top:8px">Copy-paste summary</h2>
+  <p class="lead" style="margin:6px 0 8px;font-size:.88rem">Paste this back to Claude as <code style="font-family:'IBM Plex Mono',monospace">RESULTS: …</code> to update your progress.</p>
+  <button class="btn copybtn" onclick="copySummary()">📋 Copy summary</button>
+  <textarea id="summary" readonly></textarea>
+  <button class="btn ghost" style="margin-top:14px" onclick="location.reload()">↻ Retake (reshuffles)</button>
+  <div class="foot">snowpro-prep · 04-data-loading-drill-v3</div>
+</section>
+
+</div>
+<script>
+/* DATA LOADING RE-DRILL v3 — build-quiz engine (R1 shuffle, R2 feedback-only diagram, R3 deep teaching).
+   Fresh IDs dl401–dl420; none reused from dl201–dl220 or dl301–dl320. */
+const Q=[
+{id:"dl401",sub:"Unload",
+ q:"Which COPY INTO form performs an UNLOAD (writes table data out to files)?",
+ opts:["COPY INTO @my_stage FROM my_table","COPY INTO my_table FROM @my_stage","COPY OUT my_table TO @my_stage","UNLOAD my_table TO @my_stage"],
+ a:[0],
+ concept:"COPY INTO is directional. <b>Unload = stage is the target:</b> <code>COPY INTO @stage FROM table_or_query</code> writes rows out to files. <b>Load = table is the target:</b> <code>COPY INTO table FROM @stage</code> reads files into a table. Same command, the direction depends on which side is the stage.",
+ why:["<code>COPY INTO my_table FROM @my_stage</code> is the <b>load</b> direction — the opposite of unloading.","<b>COPY OUT</b> is not a Snowflake command.","<b>UNLOAD</b> doesn't exist in Snowflake (that's Redshift)."],
+ trap:"Unload = COPY INTO @stage FROM … (stage on the left). Load = COPY INTO table FROM @stage."},
+
+{id:"dl402",sub:"Unload",
+ q:"You need to unload only rows WHERE region='EU' and just two columns. How do you write the source of the unload?",
+ opts:["FROM (SELECT id, amount FROM sales WHERE region='EU')","FROM sales WHERE region='EU' COLUMNS(id, amount)","FROM sales USING (id, amount)","You can't filter or project on unload — it exports the whole table"],
+ a:[0],
+ concept:"The source of an unload can be a <b>parenthesized query</b>: <code>COPY INTO @stage FROM (SELECT id, amount FROM sales WHERE region='EU')</code>. That lets you filter, project specific columns, join, or transform on the way out. A plain table name exports everything.",
+ why:["<b>COLUMNS(...)</b> is not valid COPY syntax.","<b>USING (...)</b> is join syntax, not a projection for unload.","'Can't filter' is false — the whole point of the query form is selective unload."],
+ trap:"Selective/transformed unload → FROM (SELECT … WHERE …). The query must be wrapped in parentheses."},
+
+{id:"dl403",sub:"Unload",
+ q:"With no extra options, what does an unload (COPY INTO @stage) produce by default? (Select TWO)",
+ opts:["Multiple files, written in parallel","gzip-compressed output","A single combined file","Uncompressed plain files"],
+ a:[0,1],
+ concept:"By default unload runs in <b>parallel and emits multiple files</b> (e.g. <code>data_0_0_0.csv.gz</code>, <code>data_0_1_0.csv.gz</code>…), each <b>gzip-compressed</b>. You override with <code>SINGLE = TRUE</code> (one file) and <code>COMPRESSION = NONE</code> (no gzip).",
+ why:["'A single combined file' is wrong by default — that needs <code>SINGLE = TRUE</code>.","'Uncompressed' is wrong by default — gzip is applied unless you set <code>COMPRESSION = NONE</code>."],
+ trap:"Unload defaults: MANY files + gzip. SINGLE=TRUE → one file; COMPRESSION=NONE → no gzip."},
+
+{id:"dl404",sub:"Unload",
+ q:"On an unload, what does MAX_FILE_SIZE control, and what is notable about its default?",
+ opts:["The maximum size of each output file; default is 16 MB (up to 5 GB)","The maximum number of files produced; default is 16","The maximum rows per file; default is 16,000","The maximum size of the source table that can be unloaded"],
+ a:[0],
+ concept:"<code>MAX_FILE_SIZE</code> caps the <b>size of each unloaded file</b> (in bytes). The default is <b>16 MB</b> and it can be raised up to <b>5 GB</b>. It also matters with <code>SINGLE = TRUE</code>: a single file still can't exceed this cap, so raise it for large single-file exports.",
+ why:["It's about <b>file size</b>, not a count of files.","It's not a <b>row</b> limit.","It doesn't limit the <b>source table</b> size — you can unload tables far larger than any single file."],
+ trap:"MAX_FILE_SIZE = bytes per output file, default 16 MB, max 5 GB. Pair with SINGLE=TRUE for big one-file exports."},
+
+{id:"dl405",sub:"Unload",
+ q:"You re-run an unload to a stage that already contains files from a previous run. Which option overwrites the existing files instead of erroring or adding new ones?",
+ opts:["OVERWRITE = TRUE","FORCE = TRUE","PURGE = TRUE","REPLACE = TRUE"],
+ a:[0],
+ concept:"On unload, <code>OVERWRITE = TRUE</code> replaces files already present in the target stage path (default <code>FALSE</code>). It's the unload-side twin of load-side reload controls.",
+ why:["<b>FORCE = TRUE</b> is a <i>load</i> option — it reloads files despite load history; it has no role in unload.","<b>PURGE = TRUE</b> deletes <i>source</i> files after a successful <i>load</i>, not target files on unload.","<b>REPLACE</b> is not a COPY option (it's used in <code>CREATE OR REPLACE</code>)."],
+ trap:"Unload overwrite = OVERWRITE=TRUE. Don't reach for FORCE (that's load-side reload) or PURGE (delete source after load)."},
+
+{id:"dl406",sub:"Object model",
+ q:"Which of these are SCHEMA-level objects? (Select THREE)",
+ opts:["Stage","Pipe","Stream","Warehouse"],
+ a:[0,1,2],
+ concept:"Schema-level objects live inside a schema: <b>tables, views, stages, pipes, streams, tasks, sequences, file formats, functions, procedures</b>. They're contained by a schema → database → account.",
+ why:["<b>Warehouse</b> is an <b>account-level</b> object (like databases, roles, users, shares, integrations, and resource monitors) — it isn't scoped to a schema."],
+ trap:"Schema-level: table, view, stage, pipe, stream, task, sequence, file format, function, procedure. Warehouse is account-level."},
+
+{id:"dl407",sub:"Object model",
+ q:"Which of the following is an ACCOUNT-level object (NOT contained in a schema)?",
+ opts:["Warehouse","Table","File format","Stream"],
+ a:[0],
+ concept:"<b>Account-level objects</b> sit directly under the account: <b>warehouses, databases, roles, users, shares, integrations, resource monitors</b>. Everything else in the question (table, file format, stream) is <b>schema-level</b>, nested in a schema inside a database.",
+ why:["<b>Table</b> is schema-level.","<b>File format</b> is schema-level.","<b>Stream</b> is schema-level."],
+ trap:"Account-level = warehouse, database, role, user, share, integration, resource monitor. Everything schema-scoped is below that."},
+
+{id:"dl408",sub:"Object model",
+ q:"What is the correct containment order of Snowflake's object hierarchy, from outermost to innermost?",
+ opts:["Account → Database → Schema → schema objects (tables, stages, etc.)","Database → Account → Schema → tables","Account → Schema → Database → tables","Schema → Database → Account → tables"],
+ a:[0],
+ concept:"The hierarchy is <b>Account → Database → Schema → objects</b> (tables, views, stages, pipes, streams, tasks, …). An organization can sit above multiple accounts, but within one account it's database, then schema, then the schema objects.",
+ why:["A <b>database can't contain the account</b> — it's the reverse.","A <b>schema doesn't contain databases</b> — databases contain schemas.","The whole order is inverted in the last option."],
+ trap:"Account ▸ Database ▸ Schema ▸ objects. Databases hold schemas; schemas hold tables/stages/pipes/etc."},
+
+{id:"dl409",sub:"Stages",
+ q:"You want a stage that automatically applies a stored CSV file format on every load AND can be granted to other roles. Which stage type is required?",
+ opts:["A named stage","A table stage","A user stage","Any internal stage can do both"],
+ a:[0],
+ concept:"Only a <b>named stage</b> is an explicitly created object, so it can (a) store a default <code>FILE_FORMAT</code> and copy options in its definition and (b) have privileges granted on it to other roles. User and table stages are implicit and can't carry a file format definition or be shared.",
+ why:["A <b>table stage</b> (<code>@%tbl</code>) can't store a custom file format definition and isn't independently grantable.","A <b>user stage</b> (<code>@~</code>) is private to one user — not shareable.","'Any internal stage' is false — user/table stages lack both capabilities."],
+ trap:"Stored file format + grantable to roles = named stage only."},
+
+{id:"dl410",sub:"Stages",
+ q:"What does the reference @%orders point to?",
+ opts:["The table stage belonging to the ORDERS table","A named stage called 'orders'","The current user's stage, filtered to orders","An external stage named orders"],
+ a:[0],
+ concept:"<b><code>@%tablename</code> is the table stage</b> of that table — so <code>@%orders</code> is the auto-created internal stage tied to the ORDERS table. Prefix cheat sheet: <code>@%tbl</code> = table stage, <code>@~</code> = user stage, <code>@name</code> = named stage.",
+ why:["A <b>named stage</b> is written <code>@orders</code> (no <code>%</code>).","The <b>user stage</b> is <code>@~</code>, not <code>@%</code>.","An external stage is just a named stage (<code>@name</code>) pointing outward — still no <code>%</code>."],
+ trap:"The % means table stage: @%orders = ORDERS' table stage. No % → named stage; @~ → user stage."},
+
+{id:"dl411",sub:"Stages",
+ q:"What is the recommended way to let an external stage authenticate to a cloud bucket without storing secret keys in Snowflake?",
+ opts:["A storage integration (delegates to a cloud IAM role/principal)","Inline credentials in the CREATE STAGE statement","A shared reader account","Granting the stage to PUBLIC"],
+ a:[0],
+ concept:"A <b>storage integration</b> is an account-level object that delegates access to a cloud IAM role (AWS)/service principal (Azure)/service account (GCP), with <code>STORAGE_ALLOWED_LOCATIONS</code> restricting which buckets are reachable. No long-lived secrets live in Snowflake — the security best practice.",
+ why:["<b>Inline credentials</b> embed secret keys in the object definition — discouraged.","A <b>reader account</b> is a data-sharing feature, unrelated to stage auth.","Granting a stage to <b>PUBLIC</b> is an access-control action, not an authentication method to the bucket."],
+ trap:"Credential-free external-stage auth = storage integration."},
+
+{id:"dl412",sub:"COPY options",
+ q:"Which COPY option stops a load once the total loaded bytes cross a threshold (while always loading at least one file)?",
+ opts:["SIZE_LIMIT","MAX_FILE_SIZE","FILES","PATTERN"],
+ a:[0],
+ concept:"<code>SIZE_LIMIT</code> bounds the <b>total bytes</b> a single COPY loads. At least one file loads, then Snowflake stops once the running total exceeds the limit — useful for controlled or incremental loads.",
+ why:["<b>MAX_FILE_SIZE</b> is an <i>unload</i> option (output file size), not a load byte cap.","<b>FILES</b> restricts the load to a specific list of file names, not a size.","<b>PATTERN</b> filters files by a regex, not by bytes."],
+ trap:"SIZE_LIMIT caps total bytes loaded. FILES=(list) and PATTERN='regex' pick WHICH files; MAX_FILE_SIZE is unload-only."},
+
+{id:"dl413",sub:"COPY options",
+ q:"For a bulk COPY INTO, which ON_ERROR value loads all the good rows and skips only the individual bad rows?",
+ opts:["CONTINUE","ABORT_STATEMENT","SKIP_FILE","SKIP_FILE_5%"],
+ a:[0],
+ concept:"<code>ON_ERROR = 'CONTINUE'</code> works at <b>row granularity</b>: good rows load, only the malformed rows are dropped. Granularity ladder: <code>CONTINUE</code> (rows) → <code>SKIP_FILE</code> (whole file) → <code>ABORT_STATEMENT</code> (whole statement, the bulk default).",
+ why:["<b>ABORT_STATEMENT</b> stops the entire load on the first error (and is the default).","<b>SKIP_FILE</b> discards the whole file that has any error, not just the bad rows.","<b>SKIP_FILE_5%</b> skips the file once ≥5% of its rows error — still file-level, not row-level."],
+ trap:"CONTINUE = skip bad ROWS. SKIP_FILE = skip the FILE. ABORT_STATEMENT = kill the whole load (default)."},
+
+{id:"dl414",sub:"COPY options",
+ q:"What is the effect of PURGE = TRUE on a COPY INTO <table> load?",
+ opts:["Staged source files are deleted after they load successfully","The target table is emptied before loading","Only failed files are removed from the stage","The load history is cleared for the table"],
+ a:[0],
+ concept:"<code>PURGE = TRUE</code> deletes the <b>source files from the stage after a successful load</b>, so old files aren't re-scanned. If the delete fails it's only a warning; the load still succeeds.",
+ why:["It never <b>truncates the target</b> — COPY doesn't clear destinations.","It removes <b>successfully loaded</b> files, not failed ones.","It doesn't touch <b>load history</b>; that 64-day metadata is separate (bypass it with FORCE)."],
+ trap:"PURGE deletes SOURCE files after a good load. FORCE bypasses history; TRUNCATE empties tables — different things."},
+
+{id:"dl415",sub:"COPY options",
+ q:"You want to test a load and see every error WITHOUT writing any rows. Which option does this?",
+ opts:["VALIDATION_MODE = 'RETURN_ALL_ERRORS'","ON_ERROR = 'CONTINUE'","RETURN_FAILED_ONLY = TRUE","DRY_RUN = TRUE"],
+ a:[0],
+ concept:"<code>VALIDATION_MODE</code> is a <b>dry run</b> — it parses the files and reports problems but <b>loads nothing</b>. Values include <code>RETURN_ERRORS</code>, <code>RETURN_ALL_ERRORS</code>, and <code>RETURN_n_ROWS</code>.",
+ why:["<b>ON_ERROR = 'CONTINUE'</b> is a real load that skips bad rows — it does write data.","<b>RETURN_FAILED_ONLY = TRUE</b> trims a real load's output to failures; it still loads.","<b>DRY_RUN</b> is not a valid COPY option."],
+ trap:"VALIDATION_MODE = dry run, writes nothing. RETURN_FAILED_ONLY = a real load that only reports failures."},
+
+{id:"dl416",sub:"Snowpipe",
+ q:"Which statement correctly contrasts BULK loading with Snowpipe (continuous) loading?",
+ opts:["Bulk runs COPY INTO on a user-managed warehouse in batches; Snowpipe loads continuously on serverless compute","Bulk is serverless; Snowpipe requires you to size a warehouse","They are identical — 'bulk' is just an alias for Snowpipe","Bulk can only load one file at a time; Snowpipe loads many"],
+ a:[0],
+ concept:"<b>Bulk loading</b> = you run <code>COPY INTO &lt;table&gt;</code> on a <b>virtual warehouse</b> you provide, in batches (on demand or via a task). <b>Snowpipe (continuous)</b> = the same COPY logic executed <b>automatically and serverless</b> as files arrive. Same engine; the difference is who triggers it and who supplies compute.",
+ why:["It's reversed — <b>bulk uses your warehouse</b>; <b>Snowpipe is serverless</b>.","They're <b>not identical</b> — bulk is manual/batch, Snowpipe is automated/continuous.","Bulk is <b>not one-file-at-a-time</b> — a single COPY can load many files in parallel."],
+ svg:`<svg viewBox="0 0 320 120" width="100%" role="img" aria-label="Bulk uses your warehouse; Snowpipe is serverless continuous">
+ <rect x="12" y="18" width="130" height="84" rx="8" fill="#EAF2FC" stroke="#1467C8"/>
+ <text x="77" y="40" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#0C2233">BULK</text>
+ <text x="77" y="58" text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" fill="#54708A">COPY INTO, batches</text>
+ <text x="77" y="72" text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" fill="#54708A">your warehouse</text>
+ <rect x="178" y="18" width="130" height="84" rx="8" fill="#E7F5EF" stroke="#0F8A63"/>
+ <text x="243" y="40" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#0C2233">SNOWPIPE</text>
+ <text x="243" y="58" text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" fill="#54708A">continuous, per-file</text>
+ <text x="243" y="72" text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" fill="#54708A">serverless</text>
+ </svg>`,cap:"Bulk = your warehouse, batches · Snowpipe = serverless, continuous",
+ trap:"Bulk = manual COPY on your warehouse (batch). Snowpipe = automated COPY, serverless (continuous). Same COPY engine underneath."},
+
+{id:"dl417",sub:"Snowpipe",
+ q:"Snowpipe auto-ingest (notification-triggered) works with which stage, and how are internal stages handled?",
+ opts:["Auto-ingest needs an external stage; internal named stages load via the Snowpipe REST API","Auto-ingest works with any stage type equally","Auto-ingest needs an internal stage; external stages use the REST API","Auto-ingest only works with the user stage"],
+ a:[0],
+ concept:"Auto-ingest listens to cloud <b>bucket notifications</b> (S3/SQS, Azure Event Grid, GCS Pub/Sub), which only external stages emit — so auto-ingest requires an <b>external stage</b>. For an <b>internal</b> named stage there's no bucket event, so you call the <b>Snowpipe REST API</b> (<code>insertFiles</code>).",
+ why:["It does <b>not</b> work with any stage equally — internal stages can't emit bucket notifications.","The mapping is reversed: external → auto-ingest, internal → REST API.","It's not limited to the user stage."],
+ trap:"Auto-ingest = external stage + notifications. Internal stage + Snowpipe = REST API (insertFiles)."},
+
+{id:"dl418",sub:"PUT/GET",
+ q:"Which pair of statements about PUT is correct?",
+ opts:["PUT works only on internal stages and gzip-compresses files by default","PUT works on any stage and never compresses","PUT works only on external stages and always compresses","PUT works only on internal stages and never compresses"],
+ a:[0],
+ concept:"PUT uploads to <b>internal stages only</b> and applies <code>AUTO_COMPRESS = TRUE</code> (gzip) plus client-side encryption by default. For already-compressed files set <code>AUTO_COMPRESS = FALSE</code>.",
+ why:["PUT can't target <b>external</b> stages, and it <i>does</i> compress by default.","'Only external' is wrong — PUT is internal-only.","'Never compresses' is wrong — the default is gzip on."],
+ trap:"PUT: internal stages only + gzip by default (AUTO_COMPRESS=TRUE) + client-side encrypted."},
+
+{id:"dl419",sub:"Load history",
+ q:"A file was loaded by a bulk COPY 40 days ago. If you run the same COPY again (no FORCE), what happens, and why?",
+ opts:["It is skipped — bulk COPY load history (64 days) still remembers the file","It reloads — bulk COPY history is only 14 days, which has passed","It reloads — COPY never tracks previously loaded files","It errors, because re-running COPY on loaded files is not allowed"],
+ a:[0],
+ concept:"Bulk COPY keeps <b>64 days</b> of load history per table and <b>skips files it already loaded</b> within that window. At 40 days the file is still remembered, so it's skipped. Use <code>FORCE = TRUE</code> to reload it anyway (risking duplicates).",
+ why:["<b>14 days</b> is Snowpipe's window, not bulk COPY's.","COPY <b>does</b> track loaded files (that's the dedup metadata).","Re-running COPY is <b>allowed</b> — it just skips already-loaded files rather than erroring."],
+ trap:"Bulk COPY dedup = 64 days (Snowpipe = 14). Within the window, re-running COPY skips the file unless FORCE=TRUE."},
+
+{id:"dl420",sub:"File formats",
+ q:"Which of these is NOT a file format Snowflake can load?",
+ opts:["YAML","Parquet","ORC","Avro"],
+ a:[0],
+ concept:"Snowflake loads six formats: <b>CSV, JSON, Avro, ORC, Parquet, XML</b>. Parquet, ORC, and Avro are all supported (they land in a <code>VARIANT</code> or map to columns). <b>YAML is not supported.</b>",
+ why:["<b>Parquet</b> is supported (columnar, common for analytics).","<b>ORC</b> is supported.","<b>Avro</b> is supported."],
+ trap:"Supported: CSV, JSON, Avro, ORC, Parquet, XML. YAML/TOML/INI are the classic 'not supported' distractors."},
+];
+
+/* ---------- ENGINE (identical to the fixed drills) ---------- */
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const word=n=>({2:'TWO',3:'THREE',4:'FOUR'}[n]||n);
+let cur=0, picks=[], validated=false;
+const answers=[];
+const el=id=>document.getElementById(id);
+
+function start(){el('start').classList.add('hidden');el('quiz').classList.remove('hidden');render();}
+
+function buildMP(){
+  const mp=el('mp');mp.innerHTML='';
+  Q.forEach((_,i)=>{const b=document.createElement('i');
+    if(i<cur)b.className='done';else if(i===cur)b.className='cur';mp.appendChild(b);});
+}
+
+function render(){
+  validated=false;picks=[];
+  const q=Q[cur];
+  const disp=q.opts.map((t,i)=>({t,correct:q.a.includes(i)}));
+  shuffle(disp);
+  q._disp=disp; q._need=q.a.length;
+  buildMP();
+  el('counter').textContent=`Question ${cur+1} of ${Q.length}`;
+  el('qtext').textContent=q.q;
+  el('extra').innerHTML=q.sql?`<pre class="sql">${q.sql}</pre>`:'';
+  el('hint').textContent=q._need>1?`Select ${word(q._need)}.`:'';
+  const o=el('opts');o.innerHTML='';
+  disp.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';b.dataset.i=i;
+    b.innerHTML=`<span class="key">${String.fromCharCode(65+i)}</span><span>${opt.t}</span>`;
+    b.onclick=()=>pick(i);
+    o.appendChild(b);
+  });
+  el('fb').innerHTML='';
+  const act=el('action');act.textContent='Validate';act.disabled=true;
+}
+
+function pick(i){
+  if(validated)return;
+  const need=Q[cur]._need;
+  if(need>1){
+    const at=picks.indexOf(i);
+    if(at>-1)picks.splice(at,1);else if(picks.length<need)picks.push(i);
+  }else picks=[i];
+  document.querySelectorAll('#opts .opt').forEach(b=>b.classList.toggle('sel',picks.includes(+b.dataset.i)));
+  el('action').disabled=picks.length!==need;
+}
+
+const arrEq=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
+
+function onAction(){validated?next():validate();}
+
+function validate(){
+  validated=true;
+  const q=Q[cur], disp=q._disp;
+  const correctIdx=disp.map((o,i)=>o.correct?i:-1).filter(i=>i>=0);
+  const correct=arrEq(picks,correctIdx);
+  answers.push({id:q.id,sub:q.sub,correct});
+  document.querySelectorAll('#opts .opt').forEach(b=>{
+    const i=+b.dataset.i;b.disabled=true;
+    const isAns=disp[i].correct,isPick=picks.includes(i);
+    if(isAns&&isPick)b.classList.add('correct');
+    else if(isAns&&!isPick)b.classList.add('missed');
+    else if(!isAns&&isPick)b.classList.add('wrong');
+  });
+  const whyList=q.why.map(w=>`<li>${w}</li>`).join('');
+  const diagram=q.svg?`<div class="svgwrap">${q.svg}<div class="svgcap">${q.cap||''}</div></div>`:'';
+  el('fb').innerHTML=`
+    <div class="verdict ${correct?'good':'bad'}">${correct?'✓ Correct':'✗ Not quite'}</div>
+    <div class="explain">
+      <div class="concept"><span class="lbl">What's really going on</span>${q.concept}</div>
+      <div class="why"><span class="lbl">Why the other options are wrong</span><ul>${whyList}</ul></div>
+      <div class="trap"><span class="lbl">Exam trap — remember this</span>${q.trap}</div>
+      ${diagram}
+    </div>`;
+  el('action').textContent=cur===Q.length-1?'See results →':'Next →';
+}
+
+function next(){
+  cur++;
+  if(cur>=Q.length)showResults();
+  else{render();window.scrollTo({top:0,behavior:'smooth'});}
+}
+
+function showResults(){
+  el('quiz').classList.add('hidden');el('results').classList.remove('hidden');
+  const total=Q.length, got=answers.filter(a=>a.correct).length, pct=Math.round(got/total*100);
+  el('finalpct').textContent=`${pct}%`;
+  el('finalpct').style.color=pct>=80?'var(--ok)':pct>=67?'var(--amber)':'var(--bad)';
+  el('passmsg').innerHTML=`${got} / ${total} correct · pass mark ≈75% · <b>clear rule 80%</b> — ${pct>=80?'✅ domain CLEARED':'🔁 needs another re-drill'}`;
+  const subs={};
+  answers.forEach(a=>{(subs[a.sub]=subs[a.sub]||{c:0,t:0});subs[a.sub].t++;if(a.correct)subs[a.sub].c++;});
+  const bars=el('subbars');bars.innerHTML='';
+  Object.entries(subs).sort((a,b)=>a[1].c/a[1].t-b[1].c/b[1].t).forEach(([s,v])=>{
+    const p=Math.round(v.c/v.t*100), col=p>=67?'var(--ok)':p>=34?'var(--amber)':'var(--bad)';
+    bars.innerHTML+=`<div class="bar-row"><div class="bar-lab"><span>${s}</span><span>${v.c}/${v.t} · ${p}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div></div>`;
+  });
+  const weak=Object.entries(subs).filter(([,v])=>v.c/v.t<0.67).map(([s])=>s);
+  el('focusbox').innerHTML=`<b>Focus next:</b> ${weak.length?weak.join(', ')+' — review these before another attempt.':'Strong across the board. If ≥80%, Data Loading is CLEARED — on to the Monitoring drill.'}`;
+  buildSummary(pct,got,total,subs,weak);
+}
+
+function buildSummary(pct,got,total,subs,weak){
+  const lines=answers.map((a,i)=>`[Data Loading] Q${i+1} ${a.correct?'✓':'✗'} — ${a.sub}${a.correct?'':' — MISS: review '+a.sub}`).join('\n');
+  const tally=Object.entries(subs).map(([s,v])=>`${s} ${v.c}/${v.t}`).join(' · ');
+  el('summary').value=
+`SnowPro Core — RESULTS
+Session: 04-data-loading-drill-v3
+Domain: Data Loading (drill 1 of 8, re-drill v3)
+Overall: ${pct}% (${got}/${total})  |  clear rule 80% -> ${pct>=80?'CLEARED':'NEEDS RE-DRILL'}
+
+Per-question:
+${lines}
+
+Sub-topic tally: ${tally}
+Focus next: ${weak.length?weak.join(', '):'none — domain solid'}`;
+}
+
+function copySummary(){
+  const t=el('summary');t.select();
+  try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand('copy');}
+  const b=event.target,o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1600);
+}
+</script>
+</body>
+</html>

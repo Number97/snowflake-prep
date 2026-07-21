@@ -5,7 +5,7 @@
   "overall": { "sessionsCleared": 0, "sessionsTotal": 11 },
   "diagnostic": { "done": true, "scorePct": 40, "raw": "8/20" },
   "phase1_drills": [
-    { "n": 1, "domain": "Data Loading",        "slug": "data-loading",   "status": "needs-redrill", "diag": "1/4", "attempts": 1, "latestScore": 70, "seenQuestionIds": ["dl201","dl202","dl203","dl204","dl205","dl206","dl207","dl208","dl209","dl210","dl211","dl212","dl213","dl214","dl215","dl216","dl217","dl218","dl219","dl220"], "note": "Attempt 1 = 70% (14/20) on the fixed drill — below 80% clear rule. Weak: Stages, Unload, PUT/GET. Re-drill v2 (dl301-dl320) built and pending. (Earlier v1 build with the slot-A bug was voided and not counted.)" },
+    { "n": 1, "domain": "Data Loading",        "slug": "data-loading",   "status": "needs-redrill", "diag": "1/4", "attempts": 2, "latestScore": 75, "seenQuestionIds": ["dl201","dl202","dl203","dl204","dl205","dl206","dl207","dl208","dl209","dl210","dl211","dl212","dl213","dl214","dl215","dl216","dl217","dl218","dl219","dl220","dl301","dl302","dl303","dl304","dl305","dl306","dl307","dl308","dl309","dl310","dl311","dl312","dl313","dl314","dl315","dl316","dl317","dl318","dl319","dl320"], "note": "Attempt 1=70%, attempt 2=75% (both below 80% clear rule). Weak now: Unload, Object model. Re-drill v3 (dl401-dl420) built, weighted to those. Earlier slot-A-bug build voided." },
     { "n": 2, "domain": "Monitoring",          "slug": "monitoring",     "status": "todo",    "diag": "0/1", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 3, "domain": "Warehouses & Perf",   "slug": "warehouses-perf","status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 4, "domain": "Data Protection",     "slug": "data-protection","status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
@@ -19,5 +19,5 @@
     { "n": 2, "type": "timed-115", "status": "locked", "latestScore": null },
     { "n": 3, "type": "timed-115", "status": "locked", "latestScore": null }
   ],
-  "nextSession": "Data Loading re-drill (v2) — focus Stages, Unload, PUT/GET"
+  "nextSession": "Data Loading re-drill (v3) — focus Unload, Object model"
 }
