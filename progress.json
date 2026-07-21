@@ -5,7 +5,7 @@
   "overall": { "sessionsCleared": 0, "sessionsTotal": 11 },
   "diagnostic": { "done": true, "scorePct": 40, "raw": "8/20" },
   "phase1_drills": [
-    { "n": 1, "domain": "Data Loading",        "slug": "data-loading",   "status": "in-progress", "diag": "1/4", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
+    { "n": 1, "domain": "Data Loading",        "slug": "data-loading",   "status": "in-progress", "diag": "1/4", "attempts": 0, "latestScore": null, "seenQuestionIds": [], "note": "v1 attempt (59%) VOIDED — build bug: answers all in slot A. Drill rebuilt with randomized positions + deep teaching; this counts as the real first attempt." },
     { "n": 2, "domain": "Monitoring",          "slug": "monitoring",     "status": "todo",    "diag": "0/1", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 3, "domain": "Warehouses & Perf",   "slug": "warehouses-perf","status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },
     { "n": 4, "domain": "Data Protection",     "slug": "data-protection","status": "todo",    "diag": "1/3", "attempts": 0, "latestScore": null, "seenQuestionIds": [] },

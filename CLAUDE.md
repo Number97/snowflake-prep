@@ -134,6 +134,12 @@ All quizzes share this identity — a clean "Snowflake data console" look. Do no
 3. **Instant feedback** — after validating: color the options (green=correct-picked, dashed-green=missed correct, red=wrong-picked), a ✓/✗ verdict line, and an **explanation card** (left cyan border) that teaches the trap, not just states the answer. Show the diagram here if the question has one. Then the button becomes "Next".
 4. **Results screen** — big % + n/total, pass-mark reminder (~75%), per-domain horizontal bars (green ≥67% / amber / red), a priority-focus box, AND the **copy-paste summary block from P2**, plus a "Retake" button.
 
+**Quiz integrity — NON-NEGOTIABLE (run the `build-quiz` skill before authoring any quiz).**
+- **Randomize answer positions.** The correct option must never sit at a fixed slot. The engine shuffles each question's options (Fisher–Yates) on every render, so the answer moves every attempt and can't be pattern-matched. Because positions move, explanations reference option *content*, never letters. *(This was a real shipped bug — every answer was slot A. Never again.)*
+- **No answer-revealing content before the user commits.** Any diagram/hint/caption that encodes the answer renders in the FEEDBACK stage only, after Validate. Question-stage visuals must be neutral.
+- **Deep teaching on every question (right OR wrong).** Each feedback shows: (1) the concept/mechanic, (2) why *each* distractor is wrong, (3) the exam trap. The user must be able to fully verify understanding, not just see the key.
+- Full standard + engine pattern + pre-delivery checklist live in the **`build-quiz`** skill.
+
 **Technical constraints for artifacts:**
 - Single self-contained `.html` file: inline CSS + JS, fonts via `<link>`, diagrams as inline `<svg>`.
 - **No `localStorage`/`sessionStorage`** (blocked in the artifact renderer) — keep quiz state in JS variables only.
