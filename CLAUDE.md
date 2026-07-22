@@ -139,7 +139,8 @@ Option/verdict tints on dark: selected/correct/wrong use translucent fills (e.g.
 - **Randomize answer positions.** The correct option must never sit at a fixed slot. The engine shuffles each question's options (Fisher–Yates) on every render, so the answer moves every attempt and can't be pattern-matched. Because positions move, explanations reference option *content*, never letters. *(This was a real shipped bug — every answer was slot A. Never again.)*
 - **No answer-revealing content before the user commits.** Any diagram/hint/caption that encodes the answer renders in the FEEDBACK stage only, after Validate. Question-stage visuals must be neutral.
 - **Deep teaching on every question (right OR wrong).** Each feedback shows: (1) the concept/mechanic, (2) why *each* distractor is wrong, (3) the exam trap. The user must be able to fully verify understanding, not just see the key.
-- Full standard + engine pattern + pre-delivery checklist live in the **`build-quiz`** skill.
+- **Verify after building.** Every quiz must pass the **`verify-quiz`** skill before it's committed — a deterministic structural gate (`scripts/verify_quiz.js`) plus an independent fact-check of every question against Snowflake docs, fixing anything wrong. This auto-runs after `build-quiz`, before `commit-progress`. A quiz is not done until verify-quiz is clean.
+- Full standard + engine pattern + pre-delivery checklist live in the **`build-quiz`** skill; the correctness gate lives in **`verify-quiz`**.
 
 **Technical constraints for artifacts:**
 - Single self-contained `.html` file: inline CSS + JS, fonts via `<link>`, diagrams as inline `<svg>`.

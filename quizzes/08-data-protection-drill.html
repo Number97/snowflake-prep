@@ -273,7 +273,7 @@ const Q=[
  q:"When you clone a DATABASE, which child objects are NOT included in the clone?",
  opts:["External tables and internal named stages","Views and sequences","Streams and tasks","Permanent tables"],
  a:[0],
- concept:"A database/schema clone copies most children but <b>skips external tables and internal named stages</b>. External tables point at outside files (nothing to zero-copy), and internal named stages hold files not part of table storage. (External tables also can't be cloned individually.)",
+ concept:"A database/schema clone copies most children but <b>skips external tables and (by default) internal named stages</b>. External tables point at outside files (nothing to zero-copy) and are never cloned; internal named stages are excluded by default (a newer <code>INCLUDE INTERNAL STAGES</code> opt-in can include them, but the exam-default answer is that they're skipped).",
  why:["<b>Views and sequences</b> are cloned.","<b>Streams and tasks</b> are cloned (streams reset their offset).","<b>Permanent tables</b> are exactly what cloning copies."],
  trap:"DB/schema clone SKIPS: external tables + internal named stages. Everything else comes along."},
 

@@ -79,9 +79,11 @@ miss must be genuinely new questions, not reshuffled old ones.
   latestScore, attempts, seenQuestionIds, nextSession) and write
   `results/<session-id>-results.md`.
 
-## R8 — Commit (P7)
-After writing any quiz/results/progress file, run the **commit-progress** skill
-(readiness-% message, auto-push).
+## R8 — Verify, then commit (P7)
+After writing/editing any quiz, run the **verify-quiz** skill FIRST — it runs the
+structural gate (`node scripts/verify_quiz.js`) plus an independent fact-check,
+and fixes anything wrong. A quiz is not "done" until verify-quiz is clean. ONLY
+THEN run **commit-progress** (readiness-% message, auto-push).
 
 ## Pre-delivery checklist (run through it, every time)
 - [ ] Options shuffle on every render; correct answer not positionally fixed.
@@ -92,4 +94,4 @@ After writing any quiz/results/progress file, run the **commit-progress** skill
 - [ ] New question IDs; nothing from `seenQuestionIds`.
 - [ ] Single file, no web storage, mobile-first, design tokens used.
 - [ ] Copy-paste summary + focus box present.
-- [ ] Saved to `quizzes/`, then commit-progress run.
+- [ ] Saved to `quizzes/`, then **verify-quiz** run clean (structural + fact-check), then commit-progress.
