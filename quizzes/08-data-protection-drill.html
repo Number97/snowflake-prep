@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnowPro Core — Data Protection Drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* DARK "Snowflake data console" theme */
+:root{
+  --bg:#0A1826; --card:#0F2233; --card2:#14293B; --ink:#E6F0F8; --muted:#8AA6BD;
+  --line:#26425B; --accent:#2E8FE6; --cyan:#29B5E8; --ok:#2FBE8D;
+  --amber:#E3A24C; --bad:#E26B54; --codebg:#06121C; --codetx:#CFE3F5; --glyph:#06121C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.55;padding:16px;min-height:100vh}
+.wrap{max-width:760px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;box-shadow:0 4px 24px rgba(0,0,0,.38)}
+h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.7rem;line-height:1.15;letter-spacing:-.01em}
+h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.25rem;margin-bottom:6px}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.14em;color:var(--cyan);margin-bottom:12px}
+.dombadge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);background:rgba(41,181,232,.12);border:1px solid rgba(41,181,232,.35);padding:4px 10px;border-radius:20px;margin-bottom:14px}
+p.lead{color:var(--muted);font-size:1rem;margin:14px 0 20px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.chip{flex:1;min-width:120px;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center}
+.chip b{display:block;font-family:'IBM Plex Mono',monospace;font-size:1.35rem;color:var(--cyan);font-weight:500}
+.chip span{font-size:.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+button{font-family:inherit;cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 26px;font-size:1rem;font-weight:600;width:100%;transition:filter .15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{background:var(--card2);color:var(--muted);cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--cyan);border:1.5px solid var(--cyan)}
+.mp{display:flex;gap:3px;margin:0 0 18px;flex-wrap:wrap}
+.mp i{height:8px;flex:1;min-width:6px;background:var(--line);border-radius:2px;transition:background .3s}
+.mp i.done{background:var(--cyan)}
+.mp i.cur{background:var(--accent)}
+.counter{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);margin-bottom:10px}
+.qtext{font-size:1.12rem;font-weight:500;margin-bottom:16px;line-height:1.4}
+pre.sql{background:var(--codebg);color:var(--codetx);font-family:'IBM Plex Mono',monospace;font-size:.82rem;padding:14px 16px;border-radius:10px;overflow-x:auto;margin:0 0 16px;line-height:1.5;border:1px solid var(--line)}
+.hint{font-size:.8rem;color:var(--amber);font-family:'IBM Plex Mono',monospace;margin-bottom:12px}
+.opts{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.opt{display:flex;gap:12px;align-items:flex-start;background:var(--card2);border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;text-align:left;font-size:.96rem;color:var(--ink);width:100%;transition:.12s}
+.opt:hover:not(:disabled){border-color:var(--cyan);background:#16324A}
+.opt.sel{border-color:var(--accent);background:rgba(46,143,230,.20)}
+.opt .key{font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:500;background:var(--bg);border:1px solid var(--line);border-radius:6px;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ink)}
+.opt.sel .key{background:var(--accent);color:#fff;border-color:var(--accent)}
+.opt.correct{border-color:var(--ok);background:rgba(47,190,141,.18)}
+.opt.correct .key{background:var(--ok);color:var(--glyph);border-color:var(--ok)}
+.opt.missed{border-color:var(--ok);border-style:dashed;background:rgba(47,190,141,.09)}
+.opt.wrong{border-color:var(--bad);background:rgba(226,107,84,.17)}
+.opt.wrong .key{background:var(--bad);color:var(--glyph);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.verdict{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:10px}
+.verdict.good{color:var(--ok)}
+.verdict.bad{color:var(--bad)}
+.explain{background:#10293D;border-left:4px solid var(--cyan);border-radius:0 12px 12px 0;padding:15px 16px;font-size:.93rem;color:var(--ink);margin-bottom:18px}
+.explain .lbl{font-family:'IBM Plex Mono',monospace;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--cyan);display:block;margin-bottom:4px}
+.explain .concept{margin-bottom:14px}
+.explain .why{margin-bottom:14px}
+.explain .why ul{margin:2px 0 0;padding-left:2px;list-style:none}
+.explain .why li{position:relative;padding-left:18px;margin-bottom:6px;line-height:1.4}
+.explain .why li::before{content:"✗";position:absolute;left:0;color:var(--bad);font-weight:700;font-size:.85em}
+.explain .trap{background:rgba(227,162,76,.12);border:1px solid rgba(227,162,76,.38);border-radius:8px;padding:10px 12px;margin-top:4px}
+.explain .trap .lbl{color:var(--amber)}
+.explain b{color:var(--cyan)}
+.explain code{font-family:'IBM Plex Mono',monospace;font-size:.85em;background:rgba(46,143,230,.20);color:#DCEBFB;padding:1px 5px;border-radius:4px}
+.svgwrap{background:#0C1E2E;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:18px 18px;border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0 0}
+.svgcap{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);text-align:center;margin-top:8px}
+.bigpct{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:3.4rem;line-height:1;color:var(--cyan)}
+.passline{color:var(--muted);font-size:.9rem;margin:6px 0 20px}
+.bars{display:flex;flex-direction:column;gap:12px;margin:18px 0}
+.bar-row{display:flex;flex-direction:column;gap:5px}
+.bar-lab{display:flex;justify-content:space-between;font-size:.82rem;font-family:'IBM Plex Mono',monospace}
+.bar-track{height:10px;background:var(--bg);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar-fill{height:100%;border-radius:6px}
+.focus{background:rgba(227,162,76,.10);border:1px solid rgba(227,162,76,.38);border-radius:12px;padding:14px 16px;margin:18px 0;font-size:.92rem}
+.focus b{color:var(--amber)}
+textarea{width:100%;height:230px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;background:var(--codebg);color:var(--codetx);border:1px solid var(--line);border-radius:10px;padding:12px;resize:vertical;line-height:1.5}
+.copybtn{margin:10px 0 4px;background:var(--ok);color:var(--glyph)}
+.hidden{display:none}
+.foot{text-align:center;color:var(--muted);font-size:.75rem;margin-top:18px;font-family:'IBM Plex Mono',monospace}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section id="start" class="card">
+  <div class="eyebrow">SnowPro Core · COF-C02 · Drill 4 of 8</div>
+  <h1>Data Protection</h1>
+  <p class="lead">Time Travel, Fail-safe, zero-copy cloning, the table types, and replication. The retention numbers and "which table type has what" matrix are pure exam bait. Clear it at <b>≥ 80%</b>.</p>
+  <div class="chips">
+    <div class="chip"><b>20</b><span>Questions</span></div>
+    <div class="chip"><b>Protection</b><span>Domain</span></div>
+    <div class="chip"><b>∞</b><span>No timer</span></div>
+  </div>
+  <button class="btn" onclick="start()">Start drill →</button>
+</section>
+
+<section id="quiz" class="card hidden">
+  <div class="mp" id="mp"></div>
+  <div class="counter" id="counter"></div>
+  <div class="dombadge">Data Protection</div>
+  <div class="qtext" id="qtext"></div>
+  <div id="extra"></div>
+  <div class="hint" id="hint"></div>
+  <div class="opts" id="opts"></div>
+  <div id="fb"></div>
+  <button class="btn" id="action" disabled onclick="onAction()">Validate</button>
+</section>
+
+<section id="results" class="card hidden">
+  <div class="eyebrow">Drill complete</div>
+  <h2>Your Data Protection score</h2>
+  <div class="bigpct" id="finalpct"></div>
+  <div class="passline" id="passmsg"></div>
+  <div class="bars" id="subbars"></div>
+  <div class="focus" id="focusbox"></div>
+  <h2 style="margin-top:8px">Copy-paste summary</h2>
+  <p class="lead" style="margin:6px 0 8px;font-size:.88rem">Paste this back to Claude as <code style="font-family:'IBM Plex Mono',monospace">RESULTS: …</code> to update your progress.</p>
+  <button class="btn copybtn" onclick="copySummary()">📋 Copy summary</button>
+  <textarea id="summary" readonly></textarea>
+  <button class="btn ghost" style="margin-top:14px" onclick="location.reload()">↻ Retake (reshuffles)</button>
+  <div class="foot">snowpro-prep · 08-data-protection-drill</div>
+</section>
+
+</div>
+<script>
+/* DATA PROTECTION DRILL — build-quiz engine. Fresh IDs dp01–dp20. */
+const Q=[
+{id:"dp01",sub:"Time Travel",
+ q:"On Standard Edition, what is the MAXIMUM Time Travel retention for a table?",
+ opts:["1 day","7 days","90 days","0 days — Standard has no Time Travel"],
+ a:[0],
+ concept:"On <b>Standard Edition, Time Travel maxes out at 1 day</b> (retention can be 0 or 1). <b>Enterprise Edition and above</b> can extend it up to <b>90 days</b> per object via <code>DATA_RETENTION_TIME_IN_DAYS</code>.",
+ why:["<b>7 days</b> is the fixed Fail-safe window, not Standard Time Travel.","<b>90 days</b> is the Enterprise+ maximum, not Standard.","Standard <i>does</i> have Time Travel — up to 1 day (default 1)."],
+ trap:"Standard TT = max 1 day. Enterprise+ = up to 90 days. Fail-safe (7 days) is separate."},
+
+{id:"dp02",sub:"Time Travel",
+ q:"You need 45 days of Time Travel on a critical table. What must be true?",
+ opts:["The account must be Enterprise Edition or higher (max TT is 90 days there)","Standard Edition supports this with DATA_RETENTION_TIME_IN_DAYS = 45","Fail-safe must be extended to 45 days","It's impossible — Time Travel caps at 7 days on all editions"],
+ a:[0],
+ concept:"Time Travel beyond 1 day requires <b>Enterprise Edition or higher</b>, where you can set <code>DATA_RETENTION_TIME_IN_DAYS</code> anywhere from 0 to <b>90</b>. 45 days is fine on Enterprise+.",
+ why:["<b>Standard</b> caps at 1 day, so 45 isn't possible there.","<b>Fail-safe</b> is fixed at 7 days and not configurable — it's unrelated to setting retention.","Time Travel does <i>not</i> cap at 7 days — that's Fail-safe's number."],
+ trap:"Retention > 1 day → Enterprise+. Range 0–90 days via DATA_RETENTION_TIME_IN_DAYS. Fail-safe can't be extended."},
+
+{id:"dp03",sub:"Time Travel",
+ q:"Which clauses let you query a table's data AS IT WAS at an earlier point in time?",
+ opts:["AT and BEFORE","AS OF and PRIOR","ROLLBACK and RESTORE","SNAPSHOT and REWIND"],
+ a:[0],
+ concept:"Time Travel queries use <b><code>AT</code></b> and <b><code>BEFORE</code></b> in a clause, e.g. <code>SELECT … AT(OFFSET =&gt; -300)</code>, <code>AT(TIMESTAMP =&gt; …)</code>, or <code>BEFORE(STATEMENT =&gt; '&lt;query_id&gt;')</code>. They read historical versions still within the retention window.",
+ why:["<b>AS OF / PRIOR</b> aren't Snowflake Time Travel keywords.","<b>ROLLBACK / RESTORE</b> are not how you read historical data (ROLLBACK is transaction control).","<b>SNAPSHOT / REWIND</b> aren't Snowflake syntax."],
+ trap:"Time Travel = AT / BEFORE, with OFFSET, TIMESTAMP, or STATEMENT parameters."},
+
+{id:"dp04",sub:"Time Travel",
+ q:"Someone accidentally ran DROP TABLE on a table that is within its Time Travel window. Fastest recovery?",
+ opts:["UNDROP TABLE — restores it instantly from Time Travel","Restore it from Fail-safe via a SQL command","Re-create the table and reload from the source files","Open a Snowflake Support ticket"],
+ a:[0],
+ concept:"<b><code>UNDROP TABLE</code></b> (also works for schemas and databases) restores a dropped object instantly, as long as it's still within Time Travel retention. No reload needed.",
+ why:["<b>Fail-safe</b> isn't user-accessible by SQL — only Snowflake Support can recover from it, and only after Time Travel expires.","<b>Reloading from source</b> is unnecessary work when UNDROP is available.","A <b>Support ticket</b> is only needed if Time Travel has already expired (i.e. you're into Fail-safe)."],
+ trap:"Within Time Travel → UNDROP (instant, self-service). Past Time Travel → only Support (Fail-safe)."},
+
+{id:"dp05",sub:"Time Travel",
+ q:"What does setting DATA_RETENTION_TIME_IN_DAYS = 0 on a table do?",
+ opts:["Disables Time Travel for that table (no historical queries, no UNDROP window)","Sets Time Travel to the account maximum","Extends Fail-safe to unlimited","Makes the table transient"],
+ a:[0],
+ concept:"<code>DATA_RETENTION_TIME_IN_DAYS = 0</code> <b>turns Time Travel off</b> for that object — you can't query history or UNDROP it (and permanent tables still get their 7-day Fail-safe afterward). Retention is set per-object and inherited from the schema/database default otherwise.",
+ why:["0 is the minimum (off), not the maximum.","It has no effect on Fail-safe, which is fixed at 7 days for permanent tables.","Retention days and table <i>type</i> (transient) are independent settings."],
+ trap:"DATA_RETENTION_TIME_IN_DAYS = 0 → Time Travel off. Max is 1 (Standard) or 90 (Enterprise+)."},
+
+{id:"dp06",sub:"Fail-safe",
+ q:"How long is the Fail-safe period, and is it configurable?",
+ opts:["7 days, fixed and non-configurable","Up to 90 days, configurable per object","1 day on Standard, 90 on Enterprise","24 hours, fixed"],
+ a:[0],
+ concept:"<b>Fail-safe is a fixed 7-day period</b> that begins <b>after Time Travel expires</b>, for permanent tables only. It is <b>not configurable</b> and provides a last-resort recovery window handled entirely by Snowflake.",
+ why:["Fail-safe is not up to 90 days and not per-object — that describes Time Travel.","It's not edition-dependent (1/90) — always 7 days.","It's 7 days, not 24 hours."],
+ trap:"Fail-safe = 7 days, fixed, permanent tables only, starts AFTER Time Travel. Not tunable."},
+
+{id:"dp07",sub:"Fail-safe",
+ q:"How is data recovered from Fail-safe?",
+ opts:["Only Snowflake Support can recover it; it is not queryable by users","With a SELECT … AT(FAILSAFE) query","With UNDROP once Time Travel expires","By restoring from a resource monitor snapshot"],
+ a:[0],
+ concept:"Fail-safe is a <b>disaster-recovery backstop, not a user feature</b>. You cannot query it or restore from it yourself — recovery is a <b>best-effort process performed by Snowflake Support</b> and can take hours to days.",
+ why:["There is no <code>AT(FAILSAFE)</code> query — Fail-safe isn't user-queryable.","<b>UNDROP</b> uses Time Travel; once Time Travel expires you're in Fail-safe, which UNDROP can't reach.","Resource monitors govern credits and have nothing to do with recovery."],
+ trap:"Fail-safe recovery = Snowflake Support only, never queryable, best-effort. Time Travel = self-service."},
+
+{id:"dp08",sub:"Fail-safe",
+ q:"Which table types are protected by Fail-safe? (Select the correct single answer)",
+ opts:["Permanent tables only","Permanent and transient tables","All tables including temporary","Transient and temporary tables"],
+ a:[0],
+ concept:"<b>Only PERMANENT tables get Fail-safe.</b> Transient and temporary tables have <b>no Fail-safe</b> at all (and at most 1 day of Time Travel), which is exactly why they're cheaper to store.",
+ why:["Transient tables have <b>no</b> Fail-safe.","Temporary tables have <b>no</b> Fail-safe.","Neither transient nor temporary qualifies — only permanent."],
+ trap:"Fail-safe = permanent tables ONLY. Transient/temporary skip Fail-safe (and cap Time Travel at 1 day)."},
+
+{id:"dp09",sub:"Fail-safe",
+ q:"For a permanent table with 3-day Time Travel, when does Fail-safe protection apply?",
+ opts:["Only after the 3-day Time Travel window expires — then 7 more days of Fail-safe","During the Time Travel window, in parallel with it","Before Time Travel, for the first 7 days","Never — you must enable Fail-safe manually"],
+ a:[0],
+ concept:"The lifecycle is sequential: <b>Time Travel first</b> (here 3 days, self-service via AT/BEFORE/UNDROP), and only <b>after it expires does the 7-day Fail-safe begin</b> (Support-only). Total protected span = retention + 7 days.",
+ svg:`<svg viewBox="0 0 340 96" width="100%" role="img" aria-label="Time Travel then Fail-safe timeline">
+ <line x1="16" y1="54" x2="324" y2="54" stroke="#26425B" stroke-width="2"/>
+ <rect x="16" y="40" width="150" height="28" rx="4" fill="rgba(46,143,230,.25)" stroke="#2E8FE6"/>
+ <rect x="166" y="40" width="120" height="28" rx="4" fill="rgba(227,162,76,.22)" stroke="#E3A24C"/>
+ <text x="91" y="34" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#29B5E8">TIME TRAVEL (3d)</text>
+ <text x="226" y="34" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#E3A24C">FAIL-SAFE (7d)</text>
+ <text x="91" y="84" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#8AA6BD">self-service (AT/UNDROP)</text>
+ <text x="226" y="84" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#8AA6BD">Support only</text>
+ </svg>`,cap:"Time Travel runs first; Fail-safe begins only after it ends",
+ why:["They don't run in parallel — Fail-safe starts <i>after</i> Time Travel.","Fail-safe comes <i>after</i>, never before, Time Travel.","Fail-safe is automatic for permanent tables — you can't enable/disable it."],
+ trap:"Sequence: Time Travel → then 7-day Fail-safe. They don't overlap; Fail-safe is automatic, not manual."},
+
+{id:"dp10",sub:"Table types",
+ q:"What is the defining characteristic of a TEMPORARY table?",
+ opts:["It exists only for the current session and is dropped automatically when the session ends","It persists across sessions but has no Fail-safe","It stores data in external files","It enforces primary key constraints"],
+ a:[0],
+ concept:"A <b>TEMPORARY table is session-scoped</b>: it lives only within the session that created it and is <b>dropped automatically at session end</b>. It has at most 1 day of Time Travel and <b>no Fail-safe</b>.",
+ why:["Persisting across sessions describes a <b>transient</b> table, not temporary.","Storing data in external files is an <b>external</b> table.","Enforced primary keys describe a <b>hybrid</b> (Unistore) table."],
+ trap:"TEMPORARY = session-only, auto-dropped at disconnect, no Fail-safe. TRANSIENT persists across sessions."},
+
+{id:"dp11",sub:"Table types",
+ q:"How does a TRANSIENT table differ from a PERMANENT table?",
+ opts:["Transient has no Fail-safe and max 1 day Time Travel, so it's cheaper for storage","Transient is dropped at session end like a temporary table","Transient supports up to 90 days of Time Travel","Transient tables cannot be queried by other users"],
+ a:[0],
+ concept:"A <b>TRANSIENT table persists across sessions</b> (until explicitly dropped) but has <b>no Fail-safe</b> and Time Travel of at most 1 day. That lower protection means <b>lower storage cost</b> — good for data you can reproduce (staging, scratch).",
+ why:["It is <b>not</b> dropped at session end — that's a temporary table.","Its Time Travel caps at 1 day, not 90.","Transient tables are normal shareable objects; access is governed by privileges, not the transient property."],
+ trap:"TRANSIENT: persists across sessions, NO Fail-safe, TT ≤ 1 day → cheaper. Differs from TEMPORARY (session-scoped)."},
+
+{id:"dp12",sub:"Table types",
+ q:"Which table types have NO Fail-safe? (Select TWO)",
+ opts:["Transient","Temporary","Permanent","(Permanent is the only one WITH Fail-safe)"],
+ a:[0,1],
+ concept:"<b>Transient and Temporary tables have no Fail-safe.</b> Only <b>Permanent</b> tables get the 7-day Fail-safe. This is the single most-tested table-type fact.",
+ why:["<b>Permanent</b> tables DO have Fail-safe — so it's not a correct pick here.","The parenthetical restates that permanent is the one with Fail-safe (true), but it isn't one of the 'no Fail-safe' types being selected."],
+ trap:"No Fail-safe: TRANSIENT + TEMPORARY. Fail-safe: PERMANENT only."},
+
+{id:"dp13",sub:"Table types",
+ q:"Which table type is designed for transactional (OLTP) workloads and ENFORCES primary key, unique, and NOT NULL constraints?",
+ opts:["Hybrid table (Unistore)","Transient table","External table","Temporary table"],
+ a:[0],
+ concept:"<b>Hybrid tables</b> (the Unistore feature) use a row-based store optimized for fast single-row reads/writes (OLTP) and <b>enforce</b> PRIMARY KEY, UNIQUE, and NOT NULL constraints — unlike standard Snowflake tables, where most constraints are informational only.",
+ why:["<b>Transient</b> tables are ordinary analytic tables without Fail-safe — no enforced constraints.","<b>External</b> tables are read-only metadata over files.","<b>Temporary</b> tables are session-scoped analytic tables, not OLTP with enforced keys."],
+ trap:"Enforced PK/UNIQUE/NOT NULL + OLTP row store = HYBRID (Unistore). Standard tables enforce only NOT NULL; PK/UNIQUE are informational."},
+
+{id:"dp14",sub:"Table types",
+ q:"Which statement about constraints on STANDARD (permanent) Snowflake tables is TRUE?",
+ opts:["Only NOT NULL is enforced; PRIMARY KEY, UNIQUE, and FOREIGN KEY are informational (not enforced)","All constraints are fully enforced","No constraints, including NOT NULL, can be defined","Constraints are only allowed on transient tables"],
+ a:[0],
+ concept:"On standard tables, <b>NOT NULL is enforced</b>, but <b>PRIMARY KEY, UNIQUE, and FOREIGN KEY are metadata only</b> — defined for documentation and query optimization but not enforced. (Hybrid tables are the exception that enforces them.)",
+ why:["Not all constraints are enforced — only NOT NULL is.","Constraints (including NOT NULL) can be defined.","Constraints aren't limited to transient tables."],
+ trap:"Standard tables: NOT NULL enforced; PK/UNIQUE/FK informational. Hybrid tables enforce all."},
+
+{id:"dp15",sub:"Cloning",
+ q:"What makes zero-copy cloning 'zero-copy'?",
+ opts:["The clone references the same underlying micro-partitions; no data is duplicated at creation","It compresses the table to nearly zero bytes","It copies only the schema, leaving the clone empty","It streams the data to a new region asynchronously"],
+ a:[0],
+ concept:"Because micro-partitions are <b>immutable</b>, a clone simply <b>points at the same existing micro-partitions</b> as the source — created instantly with <b>no storage duplication</b>. As either side changes, <b>copy-on-write</b> writes new micro-partitions only for the modified data; unchanged partitions stay shared.",
+ why:["Nothing is compressed — the same partitions are referenced.","The clone is a full data clone, not schema-only/empty.","There's no async cross-region streaming — cloning is local and instant."],
+ trap:"Zero-copy = shared immutable micro-partitions + copy-on-write. You only pay storage for divergence."},
+
+{id:"dp16",sub:"Cloning",
+ q:"Which of these objects CANNOT be cloned? (Select THREE)",
+ opts:["Warehouses","Users","Roles","Schemas"],
+ a:[0,1,2],
+ concept:"<b>Warehouses, users, and roles cannot be cloned.</b> Cloning applies to data-containing/definition objects: databases, schemas, tables, streams, stages (named — with caveats), file formats, sequences, tasks, etc.",
+ why:["<b>Schemas</b> CAN be cloned (a schema clone copies its tables and most child objects), so it's not in the 'cannot' set."],
+ trap:"Cannot clone: warehouses, users, roles. (Databases/schemas/tables can be cloned.)"},
+
+{id:"dp17",sub:"Cloning",
+ q:"When you clone a DATABASE, which child objects are NOT included in the clone?",
+ opts:["External tables and internal named stages","Views and sequences","Streams and tasks","Permanent tables"],
+ a:[0],
+ concept:"A database/schema clone copies most children but <b>skips external tables and internal named stages</b>. External tables point at outside files (nothing to zero-copy), and internal named stages hold files not part of table storage. (External tables also can't be cloned individually.)",
+ why:["<b>Views and sequences</b> are cloned.","<b>Streams and tasks</b> are cloned (streams reset their offset).","<b>Permanent tables</b> are exactly what cloning copies."],
+ trap:"DB/schema clone SKIPS: external tables + internal named stages. Everything else comes along."},
+
+{id:"dp18",sub:"Cloning",
+ q:"Can you clone a table as it existed at an earlier point in time?",
+ opts:["Yes — combine CLONE with Time Travel: CREATE TABLE t2 CLONE t1 AT(TIMESTAMP => …)","No — clones can only capture the current state","Yes, but only from Fail-safe","Only if the table is transient"],
+ a:[0],
+ concept:"Cloning and Time Travel compose: <code>CREATE TABLE t2 CLONE t1 BEFORE(STATEMENT =&gt; '…')</code> or <code>AT(TIMESTAMP =&gt; …)</code> creates a clone of the source <b>as it was</b> at that historical point (within the retention window).",
+ why:["It's not limited to current state — historical clones are supported.","<b>Fail-safe</b> is Support-only and not usable in a CLONE.","This works for any cloneable table, not just transient ones."],
+ trap:"CLONE … AT/BEFORE = point-in-time clone (uses Time Travel). Powerful for recovering a past state into a new object."},
+
+{id:"dp19",sub:"Replication",
+ q:"Which edition is required for failover/failback (promoting a secondary account/database for business continuity)?",
+ opts:["Business Critical Edition (or higher)","Standard Edition","Enterprise Edition","Any edition supports failover"],
+ a:[0],
+ concept:"<b>Failover/failback</b> — automatically promoting a replicated <b>secondary</b> to serve as primary during an outage — requires <b>Business Critical Edition or higher</b> (part of its business-continuity feature set, alongside Tri-Secret Secure and PrivateLink).",
+ why:["<b>Standard</b> doesn't include failover.","<b>Enterprise</b> supports replication features but full failover/failback is a Business Critical capability.","It's not available on any edition — it's gated to Business Critical+."],
+ trap:"Failover/failback → Business Critical+. (Tri-Secret Secure, PrivateLink, HIPAA/PCI live at the same tier.)"},
+
+{id:"dp20",sub:"Replication",
+ q:"In database replication, what is the state of a SECONDARY (replica) database?",
+ opts:["Read-only — it serves reads and must be promoted before it can accept writes","Fully read-write at all times","Write-only, used just for backups","Identical to a zero-copy clone of the primary"],
+ a:[0],
+ concept:"A <b>secondary database is read-only</b>: it receives refreshes from the primary and can serve read queries (e.g. for DR or geo-local reads). To take writes it must be <b>promoted</b> to primary (failover). ",
+ why:["It is not read-write while it's a secondary — that would break consistency with the primary.","It's not write-only — it serves reads.","It's a <b>cross-account/region replica</b> kept in sync, not a zero-copy clone (which shares micro-partitions within one account)."],
+ trap:"Secondary = read-only until promoted. Replication ≠ cloning: replication copies across accounts/regions; cloning shares partitions within one account."},
+];
+
+/* ---------- ENGINE ---------- */
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+const word=n=>({2:'TWO',3:'THREE',4:'FOUR'}[n]||n);
+let cur=0, picks=[], validated=false;
+const answers=[];
+const el=id=>document.getElementById(id);
+
+function start(){el('start').classList.add('hidden');el('quiz').classList.remove('hidden');render();}
+
+function buildMP(){
+  const mp=el('mp');mp.innerHTML='';
+  Q.forEach((_,i)=>{const b=document.createElement('i');
+    if(i<cur)b.className='done';else if(i===cur)b.className='cur';mp.appendChild(b);});
+}
+
+function render(){
+  validated=false;picks=[];
+  const q=Q[cur];
+  const disp=q.opts.map((t,i)=>({t,correct:q.a.includes(i)}));
+  shuffle(disp);
+  q._disp=disp; q._need=q.a.length;
+  buildMP();
+  el('counter').textContent=`Question ${cur+1} of ${Q.length}`;
+  el('qtext').textContent=q.q;
+  el('extra').innerHTML=q.sql?`<pre class="sql">${q.sql}</pre>`:'';
+  el('hint').textContent=q._need>1?`Select ${word(q._need)}.`:'';
+  const o=el('opts');o.innerHTML='';
+  disp.forEach((opt,i)=>{
+    const b=document.createElement('button');
+    b.className='opt';b.dataset.i=i;
+    b.innerHTML=`<span class="key">${String.fromCharCode(65+i)}</span><span>${opt.t}</span>`;
+    b.onclick=()=>pick(i);
+    o.appendChild(b);
+  });
+  el('fb').innerHTML='';
+  const act=el('action');act.textContent='Validate';act.disabled=true;
+}
+
+function pick(i){
+  if(validated)return;
+  const need=Q[cur]._need;
+  if(need>1){
+    const at=picks.indexOf(i);
+    if(at>-1)picks.splice(at,1);else if(picks.length<need)picks.push(i);
+  }else picks=[i];
+  document.querySelectorAll('#opts .opt').forEach(b=>b.classList.toggle('sel',picks.includes(+b.dataset.i)));
+  el('action').disabled=picks.length!==need;
+}
+
+const arrEq=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
+
+function onAction(){validated?next():validate();}
+
+function validate(){
+  validated=true;
+  const q=Q[cur], disp=q._disp;
+  const correctIdx=disp.map((o,i)=>o.correct?i:-1).filter(i=>i>=0);
+  const correct=arrEq(picks,correctIdx);
+  answers.push({id:q.id,sub:q.sub,correct});
+  document.querySelectorAll('#opts .opt').forEach(b=>{
+    const i=+b.dataset.i;b.disabled=true;
+    const isAns=disp[i].correct,isPick=picks.includes(i);
+    if(isAns&&isPick)b.classList.add('correct');
+    else if(isAns&&!isPick)b.classList.add('missed');
+    else if(!isAns&&isPick)b.classList.add('wrong');
+  });
+  const whyList=q.why.map(w=>`<li>${w}</li>`).join('');
+  const diagram=q.svg?`<div class="svgwrap">${q.svg}<div class="svgcap">${q.cap||''}</div></div>`:'';
+  el('fb').innerHTML=`
+    <div class="verdict ${correct?'good':'bad'}">${correct?'✓ Correct':'✗ Not quite'}</div>
+    <div class="explain">
+      <div class="concept"><span class="lbl">What's really going on</span>${q.concept}</div>
+      <div class="why"><span class="lbl">Why the other options are wrong</span><ul>${whyList}</ul></div>
+      <div class="trap"><span class="lbl">Exam trap — remember this</span>${q.trap}</div>
+      ${diagram}
+    </div>`;
+  el('action').textContent=cur===Q.length-1?'See results →':'Next →';
+}
+
+function next(){
+  cur++;
+  if(cur>=Q.length)showResults();
+  else{render();window.scrollTo({top:0,behavior:'smooth'});}
+}
+
+function showResults(){
+  el('quiz').classList.add('hidden');el('results').classList.remove('hidden');
+  const total=Q.length, got=answers.filter(a=>a.correct).length, pct=Math.round(got/total*100);
+  el('finalpct').textContent=`${pct}%`;
+  el('finalpct').style.color=pct>=80?'var(--ok)':pct>=67?'var(--amber)':'var(--bad)';
+  el('passmsg').innerHTML=`${got} / ${total} correct · pass mark ≈75% · <b>clear rule 80%</b> — ${pct>=80?'✅ domain CLEARED':'🔁 needs a re-drill'}`;
+  const subs={};
+  answers.forEach(a=>{(subs[a.sub]=subs[a.sub]||{c:0,t:0});subs[a.sub].t++;if(a.correct)subs[a.sub].c++;});
+  const bars=el('subbars');bars.innerHTML='';
+  Object.entries(subs).sort((a,b)=>a[1].c/a[1].t-b[1].c/b[1].t).forEach(([s,v])=>{
+    const p=Math.round(v.c/v.t*100), col=p>=67?'var(--ok)':p>=34?'var(--amber)':'var(--bad)';
+    bars.innerHTML+=`<div class="bar-row"><div class="bar-lab"><span>${s}</span><span>${v.c}/${v.t} · ${p}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:${col}"></div></div></div>`;
+  });
+  const weak=Object.entries(subs).filter(([,v])=>v.c/v.t<0.67).map(([s])=>s);
+  el('focusbox').innerHTML=`<b>Focus next:</b> ${weak.length?weak.join(', ')+' — review these before another attempt.':'Strong across the board. If ≥80%, this domain is CLEARED — on to Architecture.'}`;
+  buildSummary(pct,got,total,subs,weak);
+}
+
+function buildSummary(pct,got,total,subs,weak){
+  const lines=answers.map((a,i)=>`[Data Protection] Q${i+1} ${a.correct?'✓':'✗'} — ${a.sub}${a.correct?'':' — MISS: review '+a.sub}`).join('\n');
+  const tally=Object.entries(subs).map(([s,v])=>`${s} ${v.c}/${v.t}`).join(' · ');
+  el('summary').value=
+`SnowPro Core — RESULTS
+Session: 08-data-protection-drill
+Domain: Data Protection (drill 4 of 8)
+Overall: ${pct}% (${got}/${total})  |  clear rule 80% -> ${pct>=80?'CLEARED':'NEEDS RE-DRILL'}
+
+Per-question:
+${lines}
+
+Sub-topic tally: ${tally}
+Focus next: ${weak.length?weak.join(', '):'none — domain solid'}`;
+}
+
+function copySummary(){
+  const t=el('summary');t.select();
+  try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand('copy');}
+  const b=event.target,o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1600);
+}
+</script>
+</body>
+</html>
